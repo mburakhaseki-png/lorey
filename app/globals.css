@@ -1,0 +1,160 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    background: #000000;
+    background-attachment: fixed;
+  }
+
+  body {
+    @apply text-white antialiased;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: transparent !important;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+}
+
+@layer utilities {
+  /* Netflix Red Gradient */
+  .netflix-gradient {
+    background: linear-gradient(135deg, #e50914 0%, #b20710 100%);
+  }
+
+  /* Minimal Card */
+  .cinematic-card {
+    @apply bg-black/40 border border-white/10 rounded-2xl;
+    backdrop-filter: blur(20px);
+    transition: all 0.3s ease;
+  }
+
+  .cinematic-card:hover {
+    border-color: rgba(229, 9, 20, 0.5);
+    transform: translateY(-2px);
+  }
+
+  /* Story Card */
+  .story-card {
+    @apply bg-black/30 border border-white/10 rounded-xl overflow-hidden;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+  }
+
+  .story-card:hover {
+    border-color: rgba(229, 9, 20, 0.4);
+  }
+
+  /* Netflix Button - Simple & Bold */
+  .netflix-button {
+    @apply relative px-8 py-3 font-semibold text-white rounded-lg overflow-hidden;
+    background: #e50914;
+    transition: all 0.2s ease;
+  }
+
+  .netflix-button:hover {
+    background: #f40612;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(229, 9, 20, 0.4);
+  }
+
+  .netflix-button:active {
+    transform: translateY(0);
+  }
+
+  /* Secondary Button */
+  .secondary-button {
+    @apply px-6 py-3 font-medium text-white rounded-lg border border-white/20 bg-white/5;
+    transition: all 0.2s ease;
+  }
+
+  .secondary-button:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  /* Episode Badge */
+  .episode-badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold;
+    background: rgba(229, 9, 20, 0.2);
+    border: 1px solid rgba(229, 9, 20, 0.4);
+    color: #e50914;
+  }
+
+  /* Glow Effect */
+  .glow-red {
+    text-shadow: 0 0 20px rgba(229, 9, 20, 0.5);
+  }
+
+  /* Text Gradient */
+  .text-gradient {
+    background: linear-gradient(135deg, #ffffff 0%, #a1a1aa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-gradient-red {
+    background: linear-gradient(135deg, #e50914 0%, #ff6b6b 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Tap Target */
+  .tap-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #000000;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333333;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #444444;
+}
+
+/* Selection */
+::selection {
+  background: rgba(229, 9, 20, 0.3);
+  color: white;
+}
+
+/* Smooth animations */
+* {
+  transition-property: background-color, border-color, color, fill, stroke, opacity, transform;
+  transition-duration: 200ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

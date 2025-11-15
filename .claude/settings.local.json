@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tree:*)",
+      "Bash(dir /S /B)",
+      "Bash(cat:*)",
+      "Bash(dir /B /A:-D \"c:\\Users\\Burak\\Documents\\Projeler\\LOREY RS_2\")",
+      "Bash(findstr:*)",
+      "Bash(npm run dev:*)",
+      "Bash(netstat:*)",
+      "Bash(taskkill:*)",
+      "Bash(set PORT=3000)",
+      "Bash(npm run dev:next:*)",
+      "Bash(dir /B \"c:\\Users\\Burak\\Documents\\Projeler\\LOREY RS_2\\TEST\")",
+      "Bash(npm install:*)",
+      "Bash(dir /S /B generate 2)",
+      "Bash(nul)",
+      "Bash(dir:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "story": [
+    {
+      "paragraph": "\"M-Morty! Morty, get in here!\" Rick'in sesi garajdan tüm evi çınlattı. Morty koşarak içeri girdiğinde, Rick dev bir ruletin başında duruyordu, ama bu sıradan bir rulet değildi - tekerleğin her bölümü farklı bir boyuta açılan portal içeriyordu. \"Bak Morty, sana olasılık teorisini öğreteceğim çünkü geçen sefer 'şans eseri' dediğin şey yüzünden neredeyse bizi Cronenberg dünyasında mahsur bırakıyordun.\" Rick bir yudum aldı matkabından ve geğirdi. \"Olasılık, bir olayın gerçekleşme şansını 0 ile 1 arasında sayısal olarak ifade etme yoludur. Sıfır demek olay asla gerçekleşmez, bir demek kesinlikle gerçekleşir. Mesela senin bir kız arkadaş bulma olasılığın teorik olarak sıfır değil ama...\" \"Rick, lütfen!\" Morty'nin yüzü kızardı. Rick ruletin yanındaki holografik ekrana bir formül yazdı: P(A) = İstenen durumların sayısı / Toplam olası durumların sayısı. \"Bu temel formül Morty. Şimdi şu rulette tam 6 boyut var. Biri Jessica'nın seni sevdiği bir boyut. Tek çevirişte o boyuta gitme olasılığın nedir?\" Morty heyecanla hesaplamaya çalıştı ama Rick sabırsızca bekliyordu, parmakları masada ritim tutuyordu.",
+      "imagePrompt": "Rick Sanchez, tall elderly man with wild spiky gray hair sticking up everywhere, prominent unibrow, wrinkled face, wearing white lab coat stained with green and purple substances, light blue shirt underneath, brown pants, black shoes, holding a flask in one hand and pointing at a holographic screen with the other hand. Morty Smith, young teenage boy with short curly brown hair, wide anxious eyes, wearing yellow t-shirt, blue jeans, white sneakers, standing nervously next to a giant interdimensional roulette wheel with glowing portals in each section. Rick's garage filled with sci-fi equipment, cables, mysterious devices, green portal residue on walls. Holographic formula floating in the air showing P(A) = desired outcomes / total outcomes. Dramatic lighting from portals casting colorful glows. High quality, detailed, 2D animated art style from Rick and Morty show",
+      "quiz": {
+        "question": "6 bölümlü bir çarkta belirli bir bölüme gelme olasılığı nedir?",
+        "options": [
+          "1/2",
+          "1/3",
+          "1/6",
+          "1/12",
+          "6/6"
+        ],
+        "answer": "1/6"
+      }
+    },
+    {
+      "paragraph": "\"Bir bölü altı Rick! Yani yaklaşık %16.7!\" Morty gururla cevapladı. Rick kaşlarını kaldırdı, neredeyse etkilenmiş gibiydi. \"Vay be Morty, belki de beynin sadece süs değilmiş. Evet, 1/6 veya 0.167 - bu da %16.7 eder.\" Ama sonra Rick'in yüzünde sinsi bir sırıtış belirdi. \"Peki ya şimdi sana gerçek bir senaryo versem? Şu Galaktik Federasyon zarlarını görüyor musun?\" Rick masadan iki yeşil, ışıldayan zar aldı. \"Bu zarlar bağımsız olaylar için mükemmel örnek. Bağımsız olaylar demek bir olayın sonucu diğerini etkilemez demek. İki zarı birden attığımızda her ikisinin de 6 gelmesi için olasılıkları çarpmamız gerekir: P(A ve B) = P(A) × P(B).\" Morty zarları dikkatle inceledi. \"Yani ilk zarın 6 gelme olasılığı 1/6, ikinci zarın da 1/6... İkisinin de 6 gelmesi (1/6) çarpı (1/6) eşittir... 1/36!\" \"Doğru! Yaklaşık %2.78. Ama işte işin ilginç kısmı Morty - bu zarlar aslında bağımsız değil.\" Rick zarlardan birini Morty'ye fırlattı ve zar havada süzülmeye başladı, yerçekimine meydan okuyarak. \"Bunlar kuantum dolaşıklığa sahip! Biri altı gelirse, diğeri asla altı gelemez!\"",
+      "imagePrompt": null,
+      "quiz": {
+        "question": "İki bağımsız olayın her ikisinin de gerçekleşme olasılığını bulmak için ne yaparız?",
+        "options": [
+          "Olasılıkları toplarız",
+          "Olasılıkları çarparız",
+          "Olasılıkları çıkarırız",
+          "Olasılıkları böleriz",
+          "Sadece birinin olasılığını alırız"
+        ],
+        "answer": "Olasılıkları çarparız"
+      }
+    },
+    {
+      "paragraph": "Morty'nin gözleri büyüdü. \"Peki bu durumda olasılık nasıl değişir Rick?\" Rick memnuniyetle güldü ve başka bir formül yazdı: P(A veya B) = P(A) + P(B) - P(A ve B). \"Birleşik olaylar Morty! En az bir zarın altı gelme olasılığını bulmak için bu formülü kullanırız. Eğer olaylar birbirini dışlamıyorsa - yani ikisi aynı anda olabiliyorsa - ortadaki kesişimi çıkarmamız gerekir.\" Rick zarları havada yakaladı ve bir kaseye attı. \"Mesela şu Blips and Chitz'deki Roy oyununda ya kanser olmak ya da araba kazası geçirmek olasılığını düşün. İkisi de olabilir, biri olabilir, ya da hiçbiri olmayabilir.\" Morty endişeyle sordu: \"Peki ikisi de aynı anda olursa ne olur?\" \"İşte tam da bu yüzden P(A ve B)'yi çıkarıyoruz Morty! Yoksa onu iki kere saymış oluruz.\" Ama tam o sırada garaj kapısı açıldı ve Beth içeri girdi, elinde bir mektupla. \"Baba, Galaktik Federasyon'dan mahkeme çağrısı gelmiş. Illegal zar oyunu oynamaktan suçlanıyormuşsun.\" Rick'in yüzü asıldı. \"Ah siktir. Morty, şimdi sana koşullu olasılık öğretme zamanı geldi çünkü yakalanma olasılığımız şartlara bağlı olarak ciddi şekilde değişti.\"",
+      "imagePrompt": "Rick Sanchez, tall elderly man with wild spiky gray hair, unibrow, wrinkled cynical expression, white lab coat with mysterious stains, light blue shirt, brown pants, black shoes, catching two glowing green quantum dice in mid-air. Morty Smith, young teenage boy with short brown hair, wide worried eyes, yellow t-shirt, blue jeans, white sneakers, looking shocked. Beth Smith visible in doorway holding an official-looking holographic letter. Rick's garage full of alien technology, strange devices, computer screens showing probability formulas P(A or B) = P(A) + P(B) - P(A and B) floating holographically. Blips and Chitz arcade poster visible on wall. Tense atmosphere with dramatic shadows. High quality, detailed, 2D animated art style from Rick and Morty show",
+      "quiz": {
+        "question": "Birleşik olaylar formülünde P(A ve B)'yi neden çıkarırız?",
+        "options": [
+          "Çünkü olaylar bağımsızdır",
+          "Çünkü kesişimi iki kere saymamak için",
+          "Çünkü olasılık 1'den büyük olamaz",
+          "Çünkü formül böyle der",
+          "Çünkü olaylar birbirini dışlar"
+        ],
+        "answer": "Çünkü kesişimi iki kere saymamak için"
+      }
+    },
+    {
+      "paragraph": "Rick hızla portal tabancasını kapıp bir portal açtı. \"Koşullu olasılık Morty - bir olayın başka bir olay gerçekleştiğinde gerçekleşme olasılığı! Formül: P(A|B) = P(A ve B) / P(B). Dikey çizgi 'şu olduğunda' demek.\" Morty kafası karışmış halde portala bakarken Rick devam etti: \"Mesela, Beth'in bizi gördüğü şartıyla Federasyon'a ihbar etme olasılığı nedir? Normal şartlarda bizi ihbar etme olasılığı düşük ama bizi suçüstü yakaladığına göre bu koşullu olasılık çok daha yüksek!\" Rick Morty'yi kolundan çekti. \"Veya başka örnek: Portal tabancamın çalıştığı şartıyla kaçma olasılığımız %100. Ama tabanca bozuksa kaçma olasılığımız sıfır! Koşul her şeyi değiştirir Morty!\" Beth öfkeyle bağırdı: \"Baba, Morty'yi başka maceralara sürüklemeden önce bu mektubu ciddiye al!\" Rick geğirdi ve holografik ekranda yeni hesaplamalar yaptı. \"Bak Morty, şu an elimizde üç seçenek var: Kaçmak, Beth'i ikna etmek, ya da Federasyon'la anlaşmak. Her birinin farklı koşullarda farklı olasılıkları var ve ben hepsini hesaplamalıyım.\" Morty tedirginlikle sordu: \"Peki Rick, tüm bu hesaplar gerçekten işe yarıyor mu yoksa sadece şans mı her şey?\"",
+      "imagePrompt": null,
+      "quiz": {
+        "question": "P(A|B) formülündeki dikey çizgi (|) ne anlama gelir?",
+        "options": [
+          "Veya",
+          "Ve",
+          "Şu olduğunda/şartıyla",
+          "Değil",
+          "Çarpı"
+        ],
+        "answer": "Şu olduğunda/şartıyla"
+      }
+    },
+    {
+      "paragraph": "Rick'in gözleri parladı - bu soru tam da istediği yereydi. \"Harika soru Morty! İşte şimdi sana Büyük Sayılar Kanunu'nu öğreteceğim.\" Rick garajın köşesindeki dev bir makineyi açtı - içinde binlerce holografik zar dönerek zarlar atıyordu. \"Bak, şu an bu makine saniyede 1000 zar atıyor. İlk 10 atışta belki 5 tane altı gelir, belki hiç gelmez. Ama 10,000 atış sonra ne olacak?\" Ekran sayıları göstermeye başladı: 100 atış - %19 altı, 1,000 atış - %17.2 altı, 10,000 atış - %16.8 altı, 100,000 atış - %16.67 altı. \"Görüyor musun Morty? Deneyi çok sayıda tekrarladığında, gözlemlenen frekans teorik olasılığa yaklaşır! Bu yüzden kumarhaneler her zaman kazanır - kısa vadede şanslı olabilirsin ama uzun vadede matematik her zaman kazanır.\" Morty ekrana büyülenmiş gibi bakıyordu. \"Vay be Rick, yani yeterince denersem sonuçlar tahmin edilebilir mi oluyor?\" \"Kesinlikle Morty! Bu yüzden ben 5000 farklı boyutta aynı deneyleri yapıyorum - sonuçlar her zaman teoriye yaklaşıyor.\" Ama tam o sırada makine garip bir ses çıkardı ve ekranda alarm belirdi: \"UYARI: Federasyon tarama sinyali tespit edildi. Yakalanma olasılığı: %87 ve artıyor!\"",
+      "imagePrompt": "Rick Sanchez, tall elderly man with wild spiky gray hair standing up, unibrow, manic excited expression, white lab coat flowing, light blue shirt, brown pants, black shoes, gesturing enthusiastically at a massive holographic machine showing thousands of dice rolling simultaneously. Morty Smith, young teenage boy with short curly brown hair, amazed expression, yellow t-shirt, blue jeans, white sneakers, staring at floating holographic screens displaying probability statistics and graphs. Giant machine in corner of garage with spinning dice visible through transparent chambers, glowing numbers showing convergence to 16.67%. Red alarm lights starting to flash. Multiple screens showing: 100 rolls - 19%, 1000 rolls - 17.2%, 10000 rolls - 16.8%, 100000 rolls - 16.67%. Warning message in alien text visible on screen. Tense dramatic lighting mixing blue holographic glow with red alarm lights. High quality, detailed, 2D animated art style from Rick and Morty show",
+      "quiz": {
+        "question": "Büyük Sayılar Kanunu'na göre, bir deneyi çok kez tekrarladığımızda ne olur?",
+        "options": [
+          "Olasılık değişir",
+          "Sonuçlar tamamen rastgele olur",
+          "Gözlemlenen frekans teorik olasılığa yaklaşır",
+          "Olasılık sıfıra gider",
+          "Hiçbir şey olmaz"
+        ],
+        "answer": "Gözlemlenen frekans teorik olasılığa yaklaşır"
+      }
+    },
+    {
+      "paragraph": "\"Siktir siktir siktir!\" Rick panikle butona bastı ve tüm makineler kapandı. \"Tamam Morty, şimdi öğrendiklerini uygulama zamanı!\" Rick hızla beyaz tahtaya üç seçenek yazdı: \"A) Portal açıp kaç - başarı olasılığı %60, B) Beth'i ikna et - başarı olasılığı %30, C) Her ikisini dene - P(A veya B) = 0.6 + 0.3 - (0.6 × 0.3) = 0.72 yani %72!\" Morty heyecanla hesapladı. \"Rick, ama bunlar bağımsız değil ki! Beth'i ikna etmeye çalışırsak portal açmak için zaman kaybederiz!\" Rick gurur dolu baktı. \"Aferin Morty! Koşullu olasılık hatırladın. Beth'i ikna etmeye çalıştığımız şartıyla kaçma olasılığımız düşer.\" Beth hâlâ kapıda duruyordu, kolları kavuşturmuş. \"Baba, bu sefer matematiğinle değil, dürüstlükle kurtulmalısın.\" Rick derin bir nefes aldı ve portal tabancasını yavaşça indirdi. \"Biliyorsun Morty, bazen en düşük olasılıklı seçenek bile doğru seçenek olabilir. Ama istatistiksel olarak konuşursak...\" Geğirdi ve gülümsedi. \"Şansımızı %72'ye çıkardık ve bu hiç fena değil. Artık olasılık teorisini biliyorsun Morty - hayatta her şey matematik, şans sadece hesaplayamadığımız değişkenler.\" Morty başını salladı, sonunda olasılığın sadece soyut sayılar değil, gerçek hayat kararları olduğunu anlamıştı.",
+      "imagePrompt": null,
+      "quiz": {
+        "question": "İki olay bağımlıysa (biri diğerini etkiliyorsa), hangi kavramı kullanmalıyız?",
+        "options": [
+          "Bağımsız olaylar formülü",
+          "Sadece toplama",
+          "Koşullu olasılık",
+          "Büyük sayılar kanunu",
+          "Hiçbiri"
+        ],
+        "answer": "Koşullu olasılık"
+      }
+    }
+  ]
+}
