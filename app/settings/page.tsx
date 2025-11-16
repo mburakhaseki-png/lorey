@@ -184,18 +184,21 @@ export default function SettingsPage() {
 
     try {
       // Check if nickname already exists
-      const { data: existingUser, error: checkError } = await supabase
+      const trimmedNickname = nickname.trim();
+      const { data: existingUsers, error: checkError } = await supabase
         .from('user_profiles')
         .select('user_id')
-        .eq('nickname', nickname.trim())
-        .neq('user_id', user.id)
-        .single();
+        .eq('nickname', trimmedNickname)
+        .neq('user_id', user.id);
 
-      if (checkError && checkError.code !== 'PGRST116') {
-        throw checkError;
+      if (checkError) {
+        // If error is not "no rows found", throw it
+        if (checkError.code !== 'PGRST116') {
+          throw checkError;
+        }
       }
 
-      if (existingUser) {
+      if (existingUsers && existingUsers.length > 0) {
         setNicknameError('This nickname is already taken');
         setSaving(false);
         return;

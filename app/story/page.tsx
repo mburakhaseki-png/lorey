@@ -145,7 +145,8 @@ export default function StoryPage() {
             await new Promise(resolve => setTimeout(resolve, waitTime));
           }
 
-          const response = await axios.post('http://localhost:3001/api/generate/image', {
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+          const response = await axios.post(`${apiUrl}/api/generate/image`, {
             prompt: paragraph.imagePrompt,
             universe: universeContext,
           });

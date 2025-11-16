@@ -40,17 +40,23 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Lorey API server running on port ${PORT}`);
-}).on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    console.error(`❌ Port ${PORT} is already in use. Please:`);
-    console.error(`   1. Close the other application using port ${PORT}`);
-    console.error(`   2. Or change SERVER_PORT in .env file`);
-    console.error(`   3. Or kill the process: netstat -ano | findstr :${PORT}`);
-    process.exit(1);
-  } else {
-    console.error('❌ Server error:', err);
-    process.exit(1);
-  }
-});
+// Export for Vercel serverless functions
+module.exports = app;
+
+// Only listen if running locally (not in Vercel)
+if (process.env.VERCEL !== '1') {
+  app.listen(PORT, () => {
+    console.log(`🚀 Lorey API server running on port ${PORT}`);
+  }).on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`❌ Port ${PORT} is already in use. Please:`);
+      console.error(`   1. Close the other application using port ${PORT}`);
+      console.error(`   2. Or change SERVER_PORT in .env file`);
+      console.error(`   3. Or kill the process: netstat -ano | findstr :${PORT}`);
+      process.exit(1);
+    } else {
+      console.error('❌ Server error:', err);
+      process.exit(1);
+    }
+  });
+}

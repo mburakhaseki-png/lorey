@@ -83,13 +83,15 @@ export default function HomePage() {
       let lessonText = extractedText;
 
       if (!lessonText) {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        
         if (uploadType === 'file' && file) {
           const formData = new FormData();
           formData.append('file', file);
-          const extractResponse = await axios.post('http://localhost:3001/api/extract/file', formData);
+          const extractResponse = await axios.post(`${apiUrl}/api/extract/file`, formData);
           lessonText = extractResponse.data.text;
         } else if ((uploadType === 'url' || uploadType === 'youtube') && url) {
-          const extractResponse = await axios.post('http://localhost:3001/api/extract/url', { url });
+          const extractResponse = await axios.post(`${apiUrl}/api/extract/url`, { url });
           lessonText = extractResponse.data.text;
         }
 
@@ -106,7 +108,8 @@ export default function HomePage() {
         return;
       }
 
-      const response = await axios.post('http://localhost:3001/api/generate/story', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const response = await axios.post(`${apiUrl}/api/generate/story`, {
         lessonText,
         universe: universe || 'Rick and Morty'
       });
