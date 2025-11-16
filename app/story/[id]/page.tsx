@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { useRouter, useParams } from 'next/navigation';
+import axios from 'axios';
 import Quiz from '@/components/Quiz';
 import { FullPageLoader } from '@/components/Loader';
 import Header from '@/components/Header';
@@ -53,6 +54,89 @@ export default function StoryDetailPage() {
     router.push('/my-stories');
   };
 
+  // Generate images for paragraphs that need them
+  const generateImages = useCallback(async (data: StoryData, universeContext: string) => {
+    if (!data.story || data.story.length === 0) return;
+
+    const paragraphsNeedingImages = data.story.filter((p, idx) =>
+      idx % 3 === 0 && p.imagePrompt && p.imagePrompt !== null && !p.imageUrl
+    );
+
+    if (paragraphsNeedingImages.length === 0) {
+      console.log('✅ All images already generated');
+      return;
+    }
+
+    console.log('🎨 Starting image generation for', paragraphsNeedingImages.length, 'paragraphs');
+
+    let generatedCount = 0;
+    let updatedStory = { ...data };
+
+    for (let i = 0; i < data.story.length; i += 3) {
+      const paragraph = data.story[i];
+
+      if (!paragraph.imagePrompt || paragraph.imagePrompt === null || paragraph.imageUrl) {
+        continue;
+      }
+
+      generatedCount++;
+      console.log(`🖼️ Generating image ${generatedCount}/${paragraphsNeedingImages.length} (paragraph ${i})`);
+
+      let imageGenerated = false;
+      const maxRetries = 3;
+
+      for (let retryAttempt = 1; retryAttempt <= maxRetries && !imageGenerated; retryAttempt++) {
+        try {
+          if (retryAttempt > 1) {
+            console.log(`🔄 Retrying image generation for paragraph ${i} (attempt ${retryAttempt}/${maxRetries})...`);
+            const waitTime = Math.min(2000 * Math.pow(2, retryAttempt - 2), 4000);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+          }
+
+          // Get API URL and clean it (remove trailing slashes)
+          let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+          apiUrl = apiUrl.trim().replace(/\/+$/, '');
+
+          const response = await axios.post(`${apiUrl}/api/generate/image`, {
+            prompt: paragraph.imagePrompt,
+            universe: universeContext,
+          });
+
+          if (response.data?.imageUrl) {
+            updatedStory.story[i] = { ...updatedStory.story[i], imageUrl: response.data.imageUrl };
+            setStoryData(updatedStory);
+            
+            // Update in Supabase
+            if (user && storyId) {
+              try {
+                await supabase
+                  .from('stories')
+                  .update({
+                    story_data: updatedStory,
+                  })
+                  .eq('id', storyId)
+                  .eq('user_id', user.id);
+              } catch (err: any) {
+                console.error('Error updating story in database:', err);
+              }
+            }
+            imageGenerated = true;
+            console.log(`✅ Image generated successfully for paragraph ${i}`);
+          } else {
+            throw new Error('No imageUrl in response');
+          }
+        } catch (err) {
+          console.error(`❌ Failed to generate image for paragraph ${i} (attempt ${retryAttempt}/${maxRetries}):`, err);
+          if (retryAttempt === maxRetries) {
+            console.error(`❌ All ${maxRetries} attempts failed for paragraph ${i}. Skipping...`);
+          }
+        }
+      }
+    }
+
+    console.log(`✅ Image generation complete! Generated ${generatedCount} images`);
+  }, [user, storyId, supabase]);
+
   useEffect(() => {
     const loadStory = async () => {
       if (!user || !storyId) {
@@ -79,6 +163,16 @@ export default function StoryDetailPage() {
         setStoryData(loadedStoryData);
         setUniverse(data.universe);
         setIsLoading(false);
+
+        // Check if images need to be generated
+        const needsImageGeneration = loadedStoryData.story.some(
+          (p: any, idx: number) => idx % 3 === 0 && p.imagePrompt && !p.imageUrl
+        );
+
+        if (needsImageGeneration) {
+          console.log('🖼️ Some images are missing, generating them...');
+          generateImages(loadedStoryData, data.universe);
+        }
       } catch (err: any) {
         console.error('Error loading story:', err);
         setError(err.message || 'Failed to load story');
@@ -89,7 +183,7 @@ export default function StoryDetailPage() {
     if (user) {
       loadStory();
     }
-  }, [user, storyId, router, supabase]);
+  }, [user, storyId, router, supabase, generateImages]);
 
   // Update active image based on scroll position
   useEffect(() => {
