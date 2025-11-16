@@ -8,6 +8,10 @@ import axios from 'axios';
 import { validateLessonText } from '@/utils/parseLesson';
 import Loader from '@/components/Loader';
 import Header from '@/components/Header';
+import AuthModal from '@/components/AuthModal';
+import { useAuth } from '@/contexts/AuthContext';
+import { createClient } from '@/utils/supabase/client';
+import type { StoryData } from '@/utils/types';
 
 type UploadType = 'file' | 'url' | 'youtube' | null;
 
@@ -20,6 +24,8 @@ const heroQuotes = [
 
 export default function HomePage() {
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+  const supabase = createClient();
   const [uploadType, setUploadType] = useState<UploadType>(null);
   const [file, setFile] = useState<File | null>(null);
   const [url, setUrl] = useState('');
@@ -27,8 +33,9 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [extractedText, setExtractedText] = useState('');
-  const [testMode, setTestMode] = useState(false);
   const [currentQuote, setCurrentQuote] = useState(0);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signup');
 
   // Auto-rotate quotes
   useEffect(() => {
@@ -56,24 +63,13 @@ export default function HomePage() {
   });
 
   const handleGenerateStory = async () => {
-    if (testMode) {
-      setIsLoading(true);
-      setError('');
-      try {
-        const response = await axios.post('http://localhost:3001/api/generate/story', {
-          lessonText: 'test',
-          universe: 'Rick and Morty',
-          testMode: true
-        });
-        sessionStorage.setItem('storyData', JSON.stringify(response.data));
-        sessionStorage.setItem('universe', 'Rick and Morty');
-        router.push('/story');
-      } catch (err: any) {
-        setError(err.response?.data?.error || 'Failed to generate story');
-        setIsLoading(false);
-      }
+    // Kullanıcı giriş yapmamışsa auth modalını aç
+    if (!authLoading && !user) {
+      setAuthMode('signup');
+      setAuthModalOpen(true);
       return;
     }
+
 
     if (!uploadType || (!file && !url)) {
       setError('Please select an upload method and provide content');
@@ -112,12 +108,43 @@ export default function HomePage() {
 
       const response = await axios.post('http://localhost:3001/api/generate/story', {
         lessonText,
-        universe: universe || 'Rick and Morty',
-        testMode
+        universe: universe || 'Rick and Morty'
       });
 
-      sessionStorage.setItem('storyData', JSON.stringify(response.data));
-      sessionStorage.setItem('universe', universe || 'Rick and Morty');
+      const storyData: StoryData = response.data;
+      const storyUniverse = universe || 'Rick and Morty';
+
+      // Save to sessionStorage for immediate viewing
+      sessionStorage.setItem('storyData', JSON.stringify(storyData));
+      sessionStorage.setItem('universe', storyUniverse);
+
+      // Save to Supabase if user is logged in
+      if (user) {
+        try {
+          const { data: savedStory, error: saveError } = await supabase
+            .from('stories')
+            .insert({
+              user_id: user.id,
+              title: storyData.title,
+              universe: storyUniverse,
+              story_data: storyData,
+            })
+            .select()
+            .single();
+
+          if (saveError) {
+            console.error('Error saving story to database:', saveError);
+            // Continue anyway, story is saved in sessionStorage
+          } else if (savedStory) {
+            // Save story ID to sessionStorage for later updates
+            sessionStorage.setItem('storyId', savedStory.id);
+          }
+        } catch (err) {
+          console.error('Error saving story:', err);
+          // Continue anyway, story is saved in sessionStorage
+        }
+      }
+
       router.push('/story');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to generate story');
@@ -136,6 +163,11 @@ export default function HomePage() {
   return (
     <>
       <Header />
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        initialMode={authMode}
+      />
 
       {/* Hero Section - Minimal & Bold */}
       <section className="relative min-h-screen flex items-center justify-center px-4 pt-24 pb-20 overflow-hidden">
@@ -202,8 +234,7 @@ export default function HomePage() {
                 <p className="text-white/60 text-sm">Drop your content, pick a universe.</p>
               </div>
 
-              {!testMode && (
-                <div className="space-y-6">
+              <div className="space-y-6">
                   {/* Upload Type Selection */}
                   <div>
                     <label className="block text-sm font-medium text-white/70 mb-3">
@@ -285,7 +316,6 @@ export default function HomePage() {
                     />
                   </div>
                 </div>
-              )}
 
               {/* Error */}
               {error && (
@@ -294,46 +324,16 @@ export default function HomePage() {
                 </div>
               )}
 
-              {/* Test Mode */}
-              {testMode && (
-                <div className="p-4 bg-green-600/10 border border-green-600/30 rounded-lg text-center">
-                  <p className="font-semibold text-green-400 mb-1">🧪 Test mode active</p>
-                  <p className="text-sm text-white/70">Using sample data</p>
-                </div>
-              )}
-
               {/* Generate Button */}
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleGenerateStory}
-                disabled={!testMode && (!uploadType || (!file && !url)) || isLoading}
+                disabled={!uploadType || (!file && !url) || isLoading}
                 className="w-full netflix-button disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {testMode ? 'Load test episode' : 'Start episode'}
+                Start episode
               </motion.button>
-
-              {/* Mode Toggles */}
-              <div className="space-y-3 pt-4 border-t border-white/10">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">Test mode</p>
-                    <p className="text-xs text-white/50">Quick preview</p>
-                  </div>
-                  <button
-                    onClick={() => setTestMode(!testMode)}
-                    className={`relative w-12 h-6 rounded-full transition-colors ${
-                      testMode ? 'bg-red-600' : 'bg-white/10'
-                    }`}
-                  >
-                    <motion.div
-                      className="absolute top-1 left-1 w-4 h-4 bg-white rounded-full"
-                      animate={{ x: testMode ? 24 : 0 }}
-                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                    />
-                  </button>
-                </div>
-              </div>
             </motion.div>
           </div>
         </div>

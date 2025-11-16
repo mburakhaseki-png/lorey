@@ -8,11 +8,15 @@ import Quiz from '@/components/Quiz';
 import { FullPageLoader } from '@/components/Loader';
 import Header from '@/components/Header';
 import type { StoryData, Quiz as QuizType } from '@/utils/types';
+import { createClient } from '@/utils/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 export default function StoryPage() {
   const router = useRouter();
+  const { user } = useAuth();
+  const supabase = createClient();
   const [storyData, setStoryData] = useState<StoryData | null>(null);
   const [universe, setUniverse] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -151,7 +155,26 @@ export default function StoryPage() {
               if (!prevData) return prevData;
               const newStory = [...prevData.story];
               newStory[i] = { ...newStory[i], imageUrl: response.data.imageUrl };
-              return { ...prevData, story: newStory };
+              const updated = { ...prevData, story: newStory };
+              
+              // Update in Supabase if story ID exists
+              const storyId = sessionStorage.getItem('storyId');
+              if (storyId && user) {
+                supabase
+                  .from('stories')
+                  .update({
+                    story_data: updated,
+                  })
+                  .eq('id', storyId)
+                  .then(() => {
+                    // Successfully updated
+                  })
+                  .catch((err) => {
+                    console.error('Error updating story in database:', err);
+                  });
+              }
+              
+              return updated;
             });
             imageGenerated = true;
             console.log(`✅ Image generated successfully for paragraph ${i} (attempt ${retryAttempt})`);
