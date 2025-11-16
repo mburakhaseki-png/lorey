@@ -85,16 +85,32 @@ export default function HomePage() {
       if (!lessonText) {
         // Get API URL and clean it (remove trailing slashes and ensure no double slashes)
         let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        
+        // Debug: Log the API URL
+        console.log('🔍 DEBUG: NEXT_PUBLIC_API_URL =', process.env.NEXT_PUBLIC_API_URL);
+        console.log('🔍 DEBUG: apiUrl before cleaning =', apiUrl);
+        
         apiUrl = apiUrl.replace(/\/+$/, ''); // Remove trailing slashes
         apiUrl = apiUrl.replace(/\/+/g, '/'); // Replace multiple slashes with single slash
+        
+        // Ensure it's a full URL (starts with http:// or https://)
+        if (!apiUrl.startsWith('http://') && !apiUrl.startsWith('https://')) {
+          console.error('❌ ERROR: API URL is not a full URL:', apiUrl);
+          apiUrl = 'https://lorey-backend-api.vercel.app';
+        }
+        
+        const finalUrl = `${apiUrl}/api/extract/file`;
+        console.log('🔍 DEBUG: Final request URL =', finalUrl);
         
         if (uploadType === 'file' && file) {
           const formData = new FormData();
           formData.append('file', file);
-          const extractResponse = await axios.post(`${apiUrl}/api/extract/file`, formData);
+          const extractResponse = await axios.post(finalUrl, formData);
           lessonText = extractResponse.data.text;
         } else if ((uploadType === 'url' || uploadType === 'youtube') && url) {
-          const extractResponse = await axios.post(`${apiUrl}/api/extract/url`, { url });
+          const finalUrl = `${apiUrl}/api/extract/url`;
+          console.log('🔍 DEBUG: Final request URL =', finalUrl);
+          const extractResponse = await axios.post(finalUrl, { url });
           lessonText = extractResponse.data.text;
         }
 
@@ -113,10 +129,24 @@ export default function HomePage() {
 
       // Get API URL and clean it (remove trailing slashes and ensure no double slashes)
       let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      
+      // Debug: Log the API URL
+      console.log('🔍 DEBUG: NEXT_PUBLIC_API_URL =', process.env.NEXT_PUBLIC_API_URL);
+      console.log('🔍 DEBUG: apiUrl before cleaning =', apiUrl);
+      
       apiUrl = apiUrl.replace(/\/+$/, ''); // Remove trailing slashes
       apiUrl = apiUrl.replace(/\/+/g, '/'); // Replace multiple slashes with single slash
       
-      const response = await axios.post(`${apiUrl}/api/generate/story`, {
+      // Ensure it's a full URL (starts with http:// or https://)
+      if (!apiUrl.startsWith('http://') && !apiUrl.startsWith('https://')) {
+        console.error('❌ ERROR: API URL is not a full URL:', apiUrl);
+        apiUrl = 'https://lorey-backend-api.vercel.app';
+      }
+      
+      const finalUrl = `${apiUrl}/api/generate/story`;
+      console.log('🔍 DEBUG: Final request URL =', finalUrl);
+      
+      const response = await axios.post(finalUrl, {
         lessonText,
         universe: universe || 'Rick and Morty'
       });
