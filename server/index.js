@@ -77,8 +77,8 @@ app.use((err, req, res, next) => {
 });
 
 // Export for Vercel serverless functions
-// Vercel expects the Express app to be exported directly
-module.exports = app;
+// Vercel expects a handler function
+module.exports = (req, res) => app(req, res);
 
 // Only listen if running locally (not in Vercel)
 if (process.env.VERCEL !== '1') {
