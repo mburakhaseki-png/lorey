@@ -83,7 +83,7 @@ export default function HomePage() {
       let lessonText = extractedText;
 
       if (!lessonText) {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        const apiUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/+$/, ''); // Remove trailing slashes
         
         if (uploadType === 'file' && file) {
           const formData = new FormData();
@@ -108,7 +108,7 @@ export default function HomePage() {
         return;
       }
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const apiUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/+$/, ''); // Remove trailing slashes
       const response = await axios.post(`${apiUrl}/api/generate/story`, {
         lessonText,
         universe: universe || 'Rick and Morty'

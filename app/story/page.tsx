@@ -145,7 +145,7 @@ export default function StoryPage() {
             await new Promise(resolve => setTimeout(resolve, waitTime));
           }
 
-          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+          const apiUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/+$/, ''); // Remove trailing slashes
           const response = await axios.post(`${apiUrl}/api/generate/image`, {
             prompt: paragraph.imagePrompt,
             universe: universeContext,
