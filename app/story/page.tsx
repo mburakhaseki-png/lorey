@@ -151,31 +151,24 @@ export default function StoryPage() {
           });
 
           if (response.data?.imageUrl) {
-            setStoryData((prevData) => {
-              if (!prevData) return prevData;
-              const newStory = [...prevData.story];
-              newStory[i] = { ...newStory[i], imageUrl: response.data.imageUrl };
-              const updated = { ...prevData, story: newStory };
-              
-              // Update in Supabase if story ID exists
-              const storyId = sessionStorage.getItem('storyId');
-              if (storyId && user) {
-                supabase
+            const updatedStory = { ...data };
+            updatedStory.story[i] = { ...updatedStory.story[i], imageUrl: response.data.imageUrl };
+            setStoryData(updatedStory);
+            
+            // Update in Supabase if story ID exists
+            const storyId = sessionStorage.getItem('storyId');
+            if (storyId && user) {
+              try {
+                await supabase
                   .from('stories')
                   .update({
-                    story_data: updated,
+                    story_data: updatedStory,
                   })
-                  .eq('id', storyId)
-                  .then(() => {
-                    // Successfully updated
-                  })
-                  .catch((err) => {
-                    console.error('Error updating story in database:', err);
-                  });
+                  .eq('id', storyId);
+              } catch (err: any) {
+                console.error('Error updating story in database:', err);
               }
-              
-              return updated;
-            });
+            }
             imageGenerated = true;
             console.log(`✅ Image generated successfully for paragraph ${i} (attempt ${retryAttempt})`);
           } else {
