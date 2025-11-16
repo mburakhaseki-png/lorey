@@ -1,0 +1,33 @@
+{
+  "version": 2,
+  "functions": {
+    "api/extract/file.js": {
+      "maxDuration": 30
+    },
+    "api/extract/url.js": {
+      "maxDuration": 30
+    },
+    "api/extract/youtube.js": {
+      "maxDuration": 30
+    },
+    "api/generate/story.js": {
+      "maxDuration": 300
+    },
+    "api/generate/image.js": {
+      "maxDuration": 120
+    },
+    "api/generate/quiz.js": {
+      "maxDuration": 30
+    },
+    "api/health.js": {
+      "maxDuration": 10
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    }
+  ]
+}
+
