@@ -83,7 +83,10 @@ export default function HomePage() {
       let lessonText = extractedText;
 
       if (!lessonText) {
-        const apiUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/+$/, ''); // Remove trailing slashes
+        // Get API URL and clean it (remove trailing slashes and ensure no double slashes)
+        let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        apiUrl = apiUrl.replace(/\/+$/, ''); // Remove trailing slashes
+        apiUrl = apiUrl.replace(/\/+/g, '/'); // Replace multiple slashes with single slash
         
         if (uploadType === 'file' && file) {
           const formData = new FormData();
@@ -108,7 +111,11 @@ export default function HomePage() {
         return;
       }
 
-      const apiUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/+$/, ''); // Remove trailing slashes
+      // Get API URL and clean it (remove trailing slashes and ensure no double slashes)
+      let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      apiUrl = apiUrl.replace(/\/+$/, ''); // Remove trailing slashes
+      apiUrl = apiUrl.replace(/\/+/g, '/'); // Replace multiple slashes with single slash
+      
       const response = await axios.post(`${apiUrl}/api/generate/story`, {
         lessonText,
         universe: universe || 'Rick and Morty'
