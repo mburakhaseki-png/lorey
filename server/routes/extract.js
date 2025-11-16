@@ -10,11 +10,21 @@ const { YoutubeTranscript } = require('youtube-transcript');
 const router = express.Router();
 
 // Configure multer for file uploads
+// Use /tmp in Vercel, uploads folder locally
+const getUploadDir = () => {
+  if (process.env.VERCEL === '1') {
+    return '/tmp';
+  }
+  return path.join(__dirname, '../uploads');
+};
+
 const storage = multer.diskStorage({
   destination: async (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../uploads');
+    const uploadDir = getUploadDir();
     try {
-      await fs.mkdir(uploadDir, { recursive: true });
+      if (process.env.VERCEL !== '1') {
+        await fs.mkdir(uploadDir, { recursive: true });
+      }
     } catch (err) {
       console.error('Error creating upload directory:', err);
     }
