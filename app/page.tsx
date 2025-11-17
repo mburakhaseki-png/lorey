@@ -231,15 +231,15 @@ export default function HomePage() {
       />
 
       {/* Hero Section - Minimal & Bold */}
-      <section className="relative min-h-screen flex items-center justify-center px-4 pt-24 pb-20 overflow-hidden">
+      <section className="relative min-h-screen flex items-center justify-center px-4 sm:px-6 pt-24 pb-20 overflow-x-hidden">
         {/* Hero Gradients */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-red-600/20 rounded-full blur-[120px] opacity-60" />
-          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-red-800/20 rounded-full blur-[120px] opacity-60" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-red-500/10 rounded-full blur-[140px] opacity-40" />
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute top-0 left-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-red-600/20 rounded-full blur-[120px] opacity-60" />
+          <div className="absolute bottom-0 right-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-red-800/20 rounded-full blur-[120px] opacity-60" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] sm:w-[600px] sm:h-[600px] bg-red-500/10 rounded-full blur-[140px] opacity-40" />
         </div>
-        <div className="max-w-5xl w-full mx-auto relative z-10">
-          <div className="grid lg:grid-cols-2 gap-12 items-start">
+        <div className="max-w-5xl w-full mx-auto relative z-10 px-0">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
             {/* Left: Hero Content */}
             <motion.div
               {...getAnimationProps()}
@@ -259,11 +259,11 @@ export default function HomePage() {
               </div>
 
               <div className="space-y-4">
-                <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight">
+                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight break-words">
                   <span className="block text-white">Homework…</span>
                   <span className="block text-gradient-red glow-red">but it slaps.</span>
                 </h1>
-                <p className="text-xl text-white/70 leading-relaxed">
+                <p className="text-base sm:text-xl text-white/70 leading-relaxed break-words">
                   Drop your notes, pick a universe, stream your studying like a brand-new series.
                 </p>
               </div>
@@ -285,7 +285,7 @@ export default function HomePage() {
             {/* Right: Upload Form */}
             <motion.div
               {...getAnimationProps({ transition: { duration: isMobile ? 0 : 0.6, delay: isMobile ? 0 : 0.2 } })}
-              className="cinematic-card p-8 space-y-6"
+              className="cinematic-card p-6 sm:p-8 space-y-6 w-full"
             >
               <div>
                 <h2 className="text-2xl font-semibold mb-2">Start your episode</h2>
@@ -356,15 +356,15 @@ export default function HomePage() {
       </section>
 
       {/* Lorey Loop */}
-      <section className="relative py-24 px-4 border-t border-white/10 bg-black/40">
-        <div className="max-w-6xl mx-auto space-y-16">
+      <section className="relative py-24 px-4 sm:px-6 overflow-x-hidden border-t border-white/10 bg-black/40">
+        <div className="max-w-6xl w-full mx-auto space-y-16">
           <motion.div
             {...getAnimationProps({ viewport: { once: true } })}
             className="text-center space-y-4"
           >
             <p className="text-white/40 text-xs tracking-[0.4em] uppercase">Lorey Originals</p>
-            <h2 className="text-4xl md:text-5xl font-bold text-white">From notes to red-carpet episodes.</h2>
-            <p className="text-white/60 text-lg max-w-3xl mx-auto">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white break-words px-2">From notes to red-carpet episodes.</h2>
+            <p className="text-white/60 text-base sm:text-lg max-w-3xl mx-auto break-words px-2">
               Swipe through your study session like it just premiered. Minimal effort, maximum retention.
             </p>
           </motion.div>
@@ -417,12 +417,12 @@ export default function HomePage() {
       </section>
 
       {/* Feature Billboard */}
-      <section className="relative py-24 px-4 bg-black/60 border-y border-white/5 overflow-hidden">
-        <div className="absolute inset-0 opacity-30 pointer-events-none">
-          <div className="absolute -top-10 left-1/3 w-72 h-72 bg-red-600/30 blur-[140px]" />
-          <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-purple-600/30 blur-[180px]" />
+      <section className="relative py-24 px-4 sm:px-6 bg-black/60 border-y border-white/5 overflow-x-hidden">
+        <div className="absolute inset-0 opacity-30 pointer-events-none overflow-hidden">
+          <div className="absolute -top-10 left-1/3 w-48 h-48 sm:w-72 sm:h-72 bg-red-600/30 blur-[140px]" />
+          <div className="absolute bottom-0 right-1/4 w-56 h-56 sm:w-80 sm:h-80 bg-purple-600/30 blur-[180px]" />
         </div>
-        <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 items-center relative z-10">
+        <div className="max-w-6xl w-full mx-auto grid lg:grid-cols-2 gap-8 lg:gap-12 items-center relative z-10">
           <motion.div
             {...getAnimationProps({ 
               initial: isMobile ? { opacity: 1 } : { opacity: 0, x: -30 },
@@ -432,11 +432,11 @@ export default function HomePage() {
             className="space-y-6"
           >
             <p className="text-white/40 text-xs tracking-[0.4em] uppercase">Why Lorey</p>
-            <h2 className="text-4xl md:text-5xl font-bold leading-tight">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight break-words">
               The learning pipeline
               <span className="block text-gradient-red">built like a streaming platform.</span>
               </h2>
-              <p className="text-white/70 text-lg">
+              <p className="text-white/70 text-base sm:text-lg break-words">
               Every touchpoint is designed to feel premium, modern, fast. No dashboards. No clutter. Just cinematic focus.
               </p>
 
@@ -507,8 +507,8 @@ export default function HomePage() {
       </section>
 
       {/* Proof Strip */}
-      <section className="relative py-16 px-4 bg-black/30 border-b border-white/5">
-        <div className="max-w-5xl mx-auto grid md:grid-cols-4 gap-6 text-center">
+      <section className="relative py-16 px-4 sm:px-6 overflow-x-hidden bg-black/30 border-b border-white/5">
+        <div className="max-w-5xl w-full mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 text-center">
           {[
             { label: 'Retention lift', value: '10x' },
             { label: 'Average watch time', value: '42 min' },
@@ -531,8 +531,8 @@ export default function HomePage() {
       </section>
 
       {/* Testimonials */}
-      <section className="relative py-24 px-4">
-        <div className="max-w-5xl mx-auto space-y-12">
+      <section className="relative py-24 px-4 sm:px-6 overflow-x-hidden">
+        <div className="max-w-5xl w-full mx-auto space-y-12">
           <div className="text-center space-y-3">
             <p className="text-white/40 text-xs tracking-[0.4em] uppercase">Fans of binge-learning</p>
             <h2 className="text-4xl md:text-5xl font-bold text-white">“It feels illegal to study this way.”</h2>
@@ -566,13 +566,13 @@ export default function HomePage() {
       </section>
 
       {/* Final CTA - Minimal */}
-      <section className="relative py-24 px-4 bg-gradient-to-b from-black/30 to-black border-y border-white/5">
-        <div className="max-w-4xl mx-auto text-center space-y-8">
-          <p className="text-white/40 text-xs tracking-[0.4em] uppercase">Ready?</p>
-          <h2 className="text-4xl md:text-5xl font-bold text-white">
+      <section className="relative py-24 px-4 sm:px-6 overflow-x-hidden bg-gradient-to-b from-black/30 to-black border-y border-white/5">
+        <div className="max-w-4xl w-full mx-auto text-center space-y-8">
+            <p className="text-white/40 text-xs tracking-[0.4em] uppercase">Ready?</p>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white break-words px-2">
             Press play on your next study session.
           </h2>
-          <p className="text-white/60 text-lg max-w-2xl mx-auto">
+          <p className="text-white/60 text-base sm:text-lg max-w-2xl mx-auto break-words px-2">
             Build your first episode in under two minutes. No credit card. No templates. Just premium learning vibes.
           </p>
           <motion.button
@@ -583,7 +583,10 @@ export default function HomePage() {
                 setAuthMode('signup');
                 setAuthModalOpen(true);
               } else {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                // Prevent auto-scroll on mobile
+                if (!isMobile) {
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
               }
             }}
             className="netflix-button text-lg px-10 py-4"
@@ -595,8 +598,8 @@ export default function HomePage() {
       </section>
 
       {/* Footer - Minimal */}
-      <footer className="py-12 px-4 border-t border-white/10">
-        <div className="max-w-5xl mx-auto text-center">
+      <footer className="py-12 px-4 sm:px-6 overflow-x-hidden border-t border-white/10">
+        <div className="max-w-5xl w-full mx-auto text-center">
           <p className="text-white/50 text-sm">
             © 2025 Lorey. Turning homework into cliffhangers.
           </p>
