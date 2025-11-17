@@ -112,25 +112,27 @@ export default function StoryDetailPage() {
               updatedStory.story = [...updatedStory.story];
               updatedStory.story[i] = { ...updatedStory.story[i], imageUrl: response.data.imageUrl };
               
-              // Update in Supabase
+              // Update in Supabase (async, don't await in setState)
               if (user && storyId) {
-                supabase
-                  .from('stories')
-                  .update({
-                    story_data: updatedStory,
-                  })
-                  .eq('id', storyId)
-                  .eq('user_id', user.id)
-                  .then(({ error }) => {
+                (async () => {
+                  try {
+                    const { error } = await supabase
+                      .from('stories')
+                      .update({
+                        story_data: updatedStory,
+                      })
+                      .eq('id', storyId)
+                      .eq('user_id', user.id);
+                    
                     if (error) {
                       console.error('Error updating story in database:', error);
                     } else {
                       console.log(`✅ Story updated in database for paragraph ${i}`);
                     }
-                  })
-                  .catch((err: any) => {
+                  } catch (err: any) {
                     console.error('Error updating story in database:', err);
-                  });
+                  }
+                })();
               }
               
               return updatedStory;
