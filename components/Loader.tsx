@@ -163,7 +163,7 @@ function SnakeGame() {
 
   // Generate random food position (not on snake)
   const generateFood = useCallback((currentSnake: typeof snake) => {
-    let newFood;
+    let newFood: { x: number; y: number };
     let attempts = 0;
     do {
       newFood = {
