@@ -74,9 +74,9 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'Only .txt and .pdf files are allowed' });
     }
     
-    // Validate file size (10MB limit)
-    if (buffer.length > 10 * 1024 * 1024) {
-      return res.status(400).json({ error: 'File size must be less than 10MB' });
+    // Validate file size (50MB limit)
+    if (buffer.length > 50 * 1024 * 1024) {
+      return res.status(400).json({ error: 'File size must be less than 50MB' });
     }
 
     let text = '';

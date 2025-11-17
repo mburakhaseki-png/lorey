@@ -272,7 +272,7 @@ Models:
 
 ### File Upload Security
 - File type validation (whitelist)
-- Size limit (10MB)
+- Size limit (50MB)
 - Temporary storage with cleanup
 - Multer sanitization
 

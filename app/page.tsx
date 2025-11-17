@@ -98,7 +98,7 @@ export default function HomePage() {
       'text/plain': ['.txt'],
       'application/pdf': ['.pdf']
     },
-    maxSize: 10 * 1024 * 1024,
+    maxSize: 50 * 1024 * 1024,
     multiple: false
   });
 
@@ -307,7 +307,7 @@ export default function HomePage() {
                       <p className="text-white/80 mb-1 font-medium">
                         {isDragActive ? 'Drop the file' : 'Drag & drop or click'}
                       </p>
-                      <p className="text-xs text-white/50">TXT or PDF (max 10MB)</p>
+                      <p className="text-xs text-white/50">TXT or PDF (max 50MB)</p>
                       {file && (
                         <div className="mt-4 p-3 bg-white/5 rounded-lg border border-white/10">
                           <p className="text-sm text-white">✓ {file.name}</p>
