@@ -15,6 +15,24 @@ import type { StoryData } from '@/utils/types';
 
 type UploadType = 'file' | null;
 
+// Hook to detect mobile devices
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      // Check if window width is less than 768px (mobile breakpoint)
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  return isMobile;
+}
+
 const heroQuotes = [
   "My mom never realizes I'm studying.",
   "From boring class notes to an epic episode.",
@@ -26,6 +44,7 @@ export default function HomePage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const supabase = createClient();
+  const isMobile = useIsMobile();
   const [uploadType, setUploadType] = useState<UploadType>('file');
   const [file, setFile] = useState<File | null>(null);
   const [universe, setUniverse] = useState('');
@@ -35,6 +54,28 @@ export default function HomePage() {
   const [currentQuote, setCurrentQuote] = useState(0);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signup');
+
+  // Simplified animation props for mobile
+  const mobileAnimationProps = {
+    initial: { opacity: 1 },
+    animate: { opacity: 1 },
+    whileInView: { opacity: 1 },
+    transition: { duration: 0 },
+  };
+
+  const desktopAnimationProps = {
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    whileInView: { opacity: 1, y: 0 },
+    transition: { duration: 0.6 },
+  };
+
+  const getAnimationProps = (customProps?: any) => {
+    if (isMobile) {
+      return { ...mobileAnimationProps, ...customProps };
+    }
+    return { ...desktopAnimationProps, ...customProps };
+  };
 
   // Auto-rotate quotes
   useEffect(() => {
@@ -201,17 +242,16 @@ export default function HomePage() {
           <div className="grid lg:grid-cols-2 gap-12 items-start">
             {/* Left: Hero Content */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
+              {...getAnimationProps()}
               className="space-y-8 lg:sticky lg:top-24"
             >
               {/* Rotating Quote */}
               <div className="space-y-4">
                 <motion.p
                   key={currentQuote}
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
+                  transition={isMobile ? { duration: 0 } : { duration: 0.3 }}
                   className="text-lg text-white/70 italic"
                 >
                   "{heroQuotes[currentQuote]}"
@@ -244,9 +284,7 @@ export default function HomePage() {
 
             {/* Right: Upload Form */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
+              {...getAnimationProps({ transition: { duration: isMobile ? 0 : 0.6, delay: isMobile ? 0 : 0.2 } })}
               className="cinematic-card p-8 space-y-6"
             >
               <div>
@@ -304,8 +342,8 @@ export default function HomePage() {
 
               {/* Generate Button */}
               <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                whileHover={isMobile ? {} : { scale: 1.02 }}
+                whileTap={isMobile ? {} : { scale: 0.98 }}
                 onClick={handleGenerateStory}
                 disabled={!uploadType || !file || isLoading}
                 className="w-full netflix-button disabled:opacity-50 disabled:cursor-not-allowed"
@@ -321,9 +359,7 @@ export default function HomePage() {
       <section className="relative py-24 px-4 border-t border-white/10 bg-black/40">
         <div className="max-w-6xl mx-auto space-y-16">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            {...getAnimationProps({ viewport: { once: true } })}
             className="text-center space-y-4"
           >
             <p className="text-white/40 text-xs tracking-[0.4em] uppercase">Lorey Originals</p>
@@ -353,10 +389,10 @@ export default function HomePage() {
             ].map((item, index) => (
               <motion.div
                 key={item.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
+                {...getAnimationProps({ 
+                  viewport: { once: true },
+                  transition: { delay: isMobile ? 0 : index * 0.1 }
+                })}
                 className="relative p-6 border border-white/10 rounded-3xl bg-white/5 backdrop-blur"
               >
                 <div className="text-white/40 text-xs uppercase tracking-[0.3em] mb-4">{item.tag}</div>
@@ -368,9 +404,7 @@ export default function HomePage() {
           </div>
 
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            {...getAnimationProps({ viewport: { once: true } })}
             className="flex flex-wrap justify-center gap-4 text-xs text-white/50 uppercase tracking-[0.4em]"
           >
             {['No PDFs to format', 'No templates', 'No boring slides'].map((text) => (
@@ -390,9 +424,11 @@ export default function HomePage() {
         </div>
         <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 items-center relative z-10">
           <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
+            {...getAnimationProps({ 
+              initial: isMobile ? { opacity: 1 } : { opacity: 0, x: -30 },
+              whileInView: isMobile ? { opacity: 1 } : { opacity: 1, x: 0 },
+              viewport: { once: true }
+            })}
             className="space-y-6"
           >
             <p className="text-white/40 text-xs tracking-[0.4em] uppercase">Why Lorey</p>
@@ -431,9 +467,11 @@ export default function HomePage() {
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
+            {...getAnimationProps({ 
+              initial: isMobile ? { opacity: 1 } : { opacity: 0, x: 30 },
+              whileInView: isMobile ? { opacity: 1 } : { opacity: 1, x: 0 },
+              viewport: { once: true }
+            })}
             className="relative border border-white/10 rounded-[32px] overflow-hidden bg-black/50 shadow-2xl"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-red-600/20 to-transparent" />
@@ -479,10 +517,10 @@ export default function HomePage() {
           ].map((item, index) => (
             <motion.div
               key={item.label}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
+              {...getAnimationProps({ 
+                viewport: { once: true },
+                transition: { delay: isMobile ? 0 : index * 0.1 }
+              })}
               className="space-y-2"
             >
               <p className="text-4xl font-bold text-white">{item.value}</p>
@@ -513,10 +551,10 @@ export default function HomePage() {
             ].map((item, index) => (
               <motion.div
                 key={item.author}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
+                {...getAnimationProps({ 
+                  viewport: { once: true },
+                  transition: { delay: isMobile ? 0 : index * 0.1 }
+                })}
                 className="p-6 border border-white/10 rounded-3xl bg-white/5"
               >
                 <p className="text-white/90 text-lg leading-relaxed">“{item.quote}”</p>
@@ -538,8 +576,8 @@ export default function HomePage() {
             Build your first episode in under two minutes. No credit card. No templates. Just premium learning vibes.
           </p>
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={isMobile ? {} : { scale: 1.05 }}
+            whileTap={isMobile ? {} : { scale: 0.95 }}
             onClick={() => {
               if (!authLoading && !user) {
                 setAuthMode('signup');

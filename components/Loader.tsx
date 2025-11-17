@@ -13,6 +13,14 @@ interface LoaderProps {
 // Sound effects using Web Audio API
 function useSoundEffects() {
   const audioContextRef = useRef<AudioContext | null>(null);
+  const [soundEnabled, setSoundEnabled] = useState(() => {
+    // Load from localStorage, default to true
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('snakeSoundEnabled');
+      return saved !== null ? saved === 'true' : true;
+    }
+    return true;
+  });
 
   useEffect(() => {
     // Initialize AudioContext
@@ -25,7 +33,7 @@ function useSoundEffects() {
   }, []);
 
   const playSound = useCallback((frequency: number, duration: number, type: 'sine' | 'square' | 'sawtooth' = 'sine') => {
-    if (!audioContextRef.current) return;
+    if (!audioContextRef.current || !soundEnabled) return;
 
     const oscillator = audioContextRef.current.createOscillator();
     const gainNode = audioContextRef.current.createGain();
@@ -41,7 +49,7 @@ function useSoundEffects() {
 
     oscillator.start(audioContextRef.current.currentTime);
     oscillator.stop(audioContextRef.current.currentTime + duration);
-  }, []);
+  }, [soundEnabled]);
 
   const playEatSound = useCallback(() => {
     playSound(800, 0.1, 'sine');
@@ -54,7 +62,13 @@ function useSoundEffects() {
     setTimeout(() => playSound(100, 0.4, 'sawtooth'), 200);
   }, [playSound]);
 
-  return { playEatSound, playGameOverSound };
+  const toggleSound = useCallback(() => {
+    const newValue = !soundEnabled;
+    setSoundEnabled(newValue);
+    localStorage.setItem('snakeSoundEnabled', String(newValue));
+  }, [soundEnabled]);
+
+  return { playEatSound, playGameOverSound, soundEnabled, toggleSound };
 }
 
 // Snake Game Component
@@ -84,7 +98,7 @@ function SnakeGame() {
   const [loadingHighScore, setLoadingHighScore] = useState(true);
   const directionRef = useRef(INITIAL_DIRECTION);
   const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
-  const { playEatSound, playGameOverSound } = useSoundEffects();
+  const { playEatSound, playGameOverSound, soundEnabled, toggleSound } = useSoundEffects();
 
   // Load high score from database on mount
   useEffect(() => {
@@ -301,17 +315,34 @@ function SnakeGame() {
         <motion.div
           initial={{ scale: justAte ? 1.2 : 1 }}
           animate={{ scale: justAte ? 1.2 : 1 }}
-          className="px-6 py-3 bg-gradient-to-r from-red-600/20 to-orange-600/20 border border-red-500/30 rounded-full backdrop-blur-sm"
+          className="px-6 py-3 bg-gradient-to-r from-red-600/20 to-orange-600/20 border border-red-500/30 rounded-full backdrop-blur-sm text-center"
         >
           <div className="text-white/90 text-sm font-semibold">Score</div>
-          <div className="text-red-400 text-2xl font-bold">{score}</div>
+          <div className="text-red-400 text-2xl font-bold flex items-center justify-center">{score}</div>
         </motion.div>
         {!loadingHighScore && highScore !== null && (
-          <div className="px-6 py-3 bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 rounded-full backdrop-blur-sm">
+          <div className="px-6 py-3 bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 rounded-full backdrop-blur-sm text-center">
             <div className="text-white/70 text-xs font-semibold">Best</div>
-            <div className="text-purple-400 text-xl font-bold">{highScore}</div>
+            <div className="text-purple-400 text-xl font-bold flex items-center justify-center">{highScore}</div>
           </div>
         )}
+        {/* Sound Toggle Button */}
+        <button
+          onClick={toggleSound}
+          className="px-4 py-3 bg-gradient-to-r from-blue-600/20 to-cyan-600/20 border border-blue-500/30 rounded-full backdrop-blur-sm hover:from-blue-600/30 hover:to-cyan-600/30 transition-all"
+          title={soundEnabled ? 'Disable sound' : 'Enable sound'}
+        >
+          {soundEnabled ? (
+            <svg className="w-6 h-6 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.793L4.617 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.617l3.766-3.793a1 1 0 011.617.793zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clipRule="evenodd" />
+            </svg>
+          ) : (
+            <svg className="w-6 h-6 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.793L4.617 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.617l3.766-3.793a1 1 0 011.617.793zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clipRule="evenodd" />
+              <path d="M3.28 2.22a.75.75 0 00-1.06 1.06l14.5 14.5a.75.75 0 101.06-1.06l-14.5-14.5z" />
+            </svg>
+          )}
+        </button>
       </div>
 
       {/* Game Board */}
@@ -477,6 +508,9 @@ export function FullPageLoader({ message = 'Loading...', showSnake = false }: Lo
   // Explicitly check showSnake prop to prevent snake game from showing
   const shouldShowSnake = showSnake === true;
   
+  // Check if message is "Creating your episode..." to show additional text
+  const showAdditionalMessage = message === 'Creating your episode...';
+  
   return (
     <div className="fixed inset-0 bg-black z-50 flex flex-col items-center justify-center gap-8">
       {/* Snake Game - only show if showSnake is explicitly true */}
@@ -486,9 +520,14 @@ export function FullPageLoader({ message = 'Loading...', showSnake = false }: Lo
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="text-center"
+        className="text-center px-4"
       >
         <p className="text-lg font-medium text-white/90">{message}</p>
+        {showAdditionalMessage && (
+          <p className="text-sm text-white/60 mt-2">
+            (This takes about 2 minutes on average, so I've prepared a game for you to keep you entertained :D)
+          </p>
+        )}
       </motion.div>
     </div>
   );

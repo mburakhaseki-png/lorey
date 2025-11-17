@@ -7,11 +7,29 @@ import { useAuth } from '@/contexts/AuthContext';
 import AuthModal from './AuthModal';
 import UserMenu from './UserMenu';
 
+// Hook to detect mobile devices
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  return isMobile;
+}
+
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const { user, loading, signOut } = useAuth();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -29,9 +47,9 @@ export default function Header() {
   return (
     <>
     <motion.header
-      initial={{ y: -100, opacity: 0 }}
+      initial={isMobile ? { y: 0, opacity: 1 } : { y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.5 }}
+      transition={isMobile ? { duration: 0 } : { duration: 0.5 }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all ${
           scrolled ? 'bg-black/95 backdrop-blur-md' : 'bg-transparent'
       }`}
@@ -40,7 +58,7 @@ export default function Header() {
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="group">
             <motion.h1
-              whileHover={{ scale: 1.05 }}
+              whileHover={isMobile ? {} : { scale: 1.05 }}
               className="text-3xl font-bold"
             >
               <span className="text-gradient-red glow-red">LOREY</span>
@@ -54,8 +72,8 @@ export default function Header() {
                 <>
                   <Link href="/my-stories">
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={isMobile ? {} : { scale: 1.05 }}
+              whileTap={isMobile ? {} : { scale: 0.95 }}
               className="hidden sm:block px-5 py-2 text-sm font-medium text-white/70 hover:text-white transition-colors"
             >
                       My Stories
@@ -65,8 +83,8 @@ export default function Header() {
                 </>
               ) : (
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={isMobile ? {} : { scale: 1.05 }}
+              whileTap={isMobile ? {} : { scale: 0.95 }}
                   onClick={handleGetStarted}
               className="netflix-button text-sm px-6 py-2"
             >

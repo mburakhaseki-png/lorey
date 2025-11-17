@@ -58,26 +58,37 @@ export default function StoryDetailPage() {
   };
 
   // Generate images for paragraphs that need them
-  const generateImages = useCallback(async (data: StoryData, universeContext: string) => {
-    if (!data.story || data.story.length === 0) return;
+  const generateImages = useCallback(async (initialData: StoryData, universeContext: string) => {
+    if (!initialData.story || initialData.story.length === 0) return;
 
-    const paragraphsNeedingImages = data.story.filter((p, idx) =>
-      idx % 3 === 0 && p.imagePrompt && p.imagePrompt !== null && (!p.imageUrl || p.imageUrl === '')
-    );
+    // More strict check: only generate if imageUrl is truly missing
+    const paragraphsNeedingImages = initialData.story.filter((p, idx) => {
+      if (idx % 3 !== 0) return false;
+      if (!p.imagePrompt || p.imagePrompt === null) return false;
+      // Check if imageUrl is missing or empty
+      const hasImageUrl = p.imageUrl && p.imageUrl !== '' && p.imageUrl !== null && p.imageUrl !== undefined;
+      return !hasImageUrl;
+    });
 
     if (paragraphsNeedingImages.length === 0) {
-      console.log('✅ All images already generated');
+      console.log('✅ All images already generated - skipping image generation');
       return;
     }
 
     console.log('🎨 Starting image generation for', paragraphsNeedingImages.length, 'paragraphs');
 
     let generatedCount = 0;
+    // Keep track of updated story data as we generate images
+    let currentStoryData = { ...initialData };
+    currentStoryData.story = [...initialData.story];
 
-    for (let i = 0; i < data.story.length; i += 3) {
-      const paragraph = data.story[i];
+    for (let i = 0; i < initialData.story.length; i += 3) {
+      const paragraph = initialData.story[i];
 
-      if (!paragraph.imagePrompt || paragraph.imagePrompt === null || (paragraph.imageUrl && paragraph.imageUrl !== '')) {
+      // Skip if no imagePrompt or if imageUrl already exists
+      const hasImageUrl = paragraph.imageUrl && paragraph.imageUrl !== '' && paragraph.imageUrl !== null && paragraph.imageUrl !== undefined;
+      if (!paragraph.imagePrompt || paragraph.imagePrompt === null || hasImageUrl) {
+        console.log(`⏭️ Skipping paragraph ${i} - ${hasImageUrl ? 'image already exists' : 'no imagePrompt'}`);
         continue;
       }
 
@@ -105,41 +116,45 @@ export default function StoryDetailPage() {
           });
 
           if (response.data?.imageUrl && response.data.imageUrl !== '') {
+            const newImageUrl = response.data.imageUrl;
+            
+            // Update local copy of story data
+            currentStoryData.story[i] = { ...currentStoryData.story[i], imageUrl: newImageUrl };
+            
             // Update state using functional update to ensure we have the latest state
             setStoryData((prevData) => {
               if (!prevData) return prevData;
               const updatedStory = { ...prevData };
               updatedStory.story = [...updatedStory.story];
-              updatedStory.story[i] = { ...updatedStory.story[i], imageUrl: response.data.imageUrl };
-              
-              // Update in Supabase (async, don't await in setState)
-              if (user && storyId) {
-                (async () => {
-                  try {
-                    const { error } = await supabase
-                      .from('stories')
-                      .update({
-                        story_data: updatedStory,
-                      })
-                      .eq('id', storyId)
-                      .eq('user_id', user.id);
-                    
-                    if (error) {
-                      console.error('Error updating story in database:', error);
-                    } else {
-                      console.log(`✅ Story updated in database for paragraph ${i}`);
-                    }
-                  } catch (err: any) {
-                    console.error('Error updating story in database:', err);
-                  }
-                })();
-              }
-              
+              updatedStory.story[i] = { ...updatedStory.story[i], imageUrl: newImageUrl };
               return updatedStory;
             });
             
+            // Update in Supabase - await to ensure it's saved before continuing
+            if (user && storyId) {
+              try {
+                const { error } = await supabase
+                  .from('stories')
+                  .update({
+                    story_data: currentStoryData,
+                  })
+                  .eq('id', storyId)
+                  .eq('user_id', user.id);
+                
+                if (error) {
+                  console.error('❌ Error updating story in database:', error);
+                  throw error;
+                } else {
+                  console.log(`✅ Story updated in database for paragraph ${i} with imageUrl: ${newImageUrl.substring(0, 50)}...`);
+                }
+              } catch (err: any) {
+                console.error('❌ Error updating story in database:', err);
+                // Don't throw - continue with other images even if one fails to save
+              }
+            }
+            
             imageGenerated = true;
-            console.log(`✅ Image generated successfully for paragraph ${i}: ${response.data.imageUrl}`);
+            console.log(`✅ Image generated successfully for paragraph ${i}: ${newImageUrl.substring(0, 50)}...`);
           } else {
             throw new Error('No imageUrl in response');
           }
@@ -178,18 +193,40 @@ export default function StoryDetailPage() {
         }
 
         const loadedStoryData = data.story_data as StoryData;
+        
+        // Debug: Log image status
+        const imageStatus = loadedStoryData.story
+          .map((p: any, idx: number) => ({
+            index: idx,
+            hasPrompt: !!p.imagePrompt,
+            hasImageUrl: !!(p.imageUrl && p.imageUrl !== ''),
+            imageUrl: p.imageUrl || 'MISSING'
+          }))
+          .filter((item: any) => item.index % 3 === 0);
+        console.log('📊 Image status from database:', imageStatus);
+        
         setStoryData(loadedStoryData);
         setUniverse(data.universe);
         setIsLoading(false);
 
         // Check if images need to be generated
+        // Only generate if imagePrompt exists AND imageUrl is truly missing (null, undefined, or empty string)
         const needsImageGeneration = loadedStoryData.story.some(
-          (p: any, idx: number) => idx % 3 === 0 && p.imagePrompt && (!p.imageUrl || p.imageUrl === '')
+          (p: any, idx: number) => {
+            if (idx % 3 !== 0) return false;
+            if (!p.imagePrompt || p.imagePrompt === null) return false;
+            // Check if imageUrl is missing or empty
+            const hasImageUrl = p.imageUrl && p.imageUrl !== '' && p.imageUrl !== null && p.imageUrl !== undefined;
+            return !hasImageUrl;
+          }
         );
 
         if (needsImageGeneration) {
           console.log('🖼️ Some images are missing, generating them...');
+          // Use the loaded data directly, don't pass through state
           generateImages(loadedStoryData, data.universe);
+        } else {
+          console.log('✅ All images are already generated and saved - no regeneration needed');
         }
       } catch (err: any) {
         console.error('Error loading story:', err);
@@ -201,7 +238,8 @@ export default function StoryDetailPage() {
     if (user) {
       loadStory();
     }
-  }, [user, storyId, router, supabase, generateImages]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, storyId, router, supabase]);
 
   // Update active image based on scroll position (throttled for better performance)
   useEffect(() => {
