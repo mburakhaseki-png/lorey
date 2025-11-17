@@ -8,7 +8,7 @@ Transform any boring lesson into an interactive, fun, and story-based learning e
 - **AI-Powered Story Generation**: Uses Claude 3.5 Sonnet to transform educational content into engaging narratives
 - **Image Generation**: Creates scene-specific images using Gemini 2.5 Flash
 - **Interactive Quizzes**: Test your understanding with multiple-choice questions
-- **Universe Customization**: Set your story in any fictional universe (Rick and Morty, Harry Potter, Marvel, Star Wars, etc.)
+- **Universe Customization**: Set your story in any fictional universe you love, or create your own custom universe
 - **Mobile-First Design**: Fully responsive with beautiful animations
 - **Modern UI**: Violet and black color scheme with glass morphism effects
 
@@ -88,14 +88,12 @@ Choose one of three input methods:
 
 ### 2. Choose Your Universe
 
-Enter the name of a fictional universe, show, or movie:
-- Rick and Morty
-- Harry Potter
-- Marvel
-- Star Wars
-- The Office
-- Breaking Bad
-- ...or any other universe!
+Enter the name of any fictional universe, show, movie, or create your own:
+- Any TV show universe
+- Any movie universe
+- Any book universe
+- Your own custom universe
+- ...be creative!
 
 ### 3. Generate Your Story
 

@@ -40,9 +40,9 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // Vercel uses /tmp for temporary files
 if (process.env.VERCEL !== '1') {
   try {
-    const uploadDir = path.join(__dirname, 'uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
     }
   } catch (err) {
     console.warn('Warning: Could not create uploads directory:', err.message);
@@ -83,18 +83,18 @@ app.use((err, req, res, next) => {
 
 // Only listen if running locally (not in Vercel)
 if (process.env.VERCEL !== '1') {
-  app.listen(PORT, () => {
-    console.log(`🚀 Lorey API server running on port ${PORT}`);
-  }).on('error', (err) => {
-    if (err.code === 'EADDRINUSE') {
-      console.error(`❌ Port ${PORT} is already in use. Please:`);
-      console.error(`   1. Close the other application using port ${PORT}`);
-      console.error(`   2. Or change SERVER_PORT in .env file`);
-      console.error(`   3. Or kill the process: netstat -ano | findstr :${PORT}`);
-      process.exit(1);
-    } else {
-      console.error('❌ Server error:', err);
-      process.exit(1);
-    }
-  });
+app.listen(PORT, () => {
+  console.log(`🚀 Lorey API server running on port ${PORT}`);
+}).on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`❌ Port ${PORT} is already in use. Please:`);
+    console.error(`   1. Close the other application using port ${PORT}`);
+    console.error(`   2. Or change SERVER_PORT in .env file`);
+    console.error(`   3. Or kill the process: netstat -ano | findstr :${PORT}`);
+    process.exit(1);
+  } else {
+    console.error('❌ Server error:', err);
+    process.exit(1);
+  }
+});
 }

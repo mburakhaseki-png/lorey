@@ -91,24 +91,6 @@ export default function Quiz({ quiz, concept, universe, onRegenerate }: QuizProp
               {quiz.question}
             </h3>
           </div>
-          {concept && onRegenerate && (
-            <motion.button
-              whileHover={{ scale: 1.1, rotate: 180 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={handleRegenerate}
-              disabled={isRegenerating}
-              className="p-3 bg-black/40 border border-white/10 rounded-xl hover:border-red-500/50 transition-all disabled:opacity-50 group"
-              title="New challenge"
-            >
-              <motion.div
-                animate={isRegenerating ? { rotate: 360 } : {}}
-                transition={{ duration: 1, repeat: isRegenerating ? Infinity : 0, ease: 'linear' }}
-                className="text-lg group-hover:scale-110 transition-transform"
-              >
-                🔄
-              </motion.div>
-            </motion.button>
-          )}
         </div>
 
         {/* Options - Game-style cards */}

@@ -227,7 +227,7 @@ server/
 ```typescript
 sessionStorage {
   "storyData": "{ story: [...] }",
-  "universe": "Rick and Morty"
+  "universe": "Custom Universe"
 }
 ```
 

@@ -63,22 +63,15 @@ Let's try the **File** option:
 
 ### Step 5: Choose Your Universe
 
-In the "Choose Your Universe" field, enter:
+In the "Choose Your Universe" field, enter any fictional universe you love:
 
-**Beginner Examples:**
-- `Rick and Morty`
-- `Harry Potter`
-- `The Office`
-- `Marvel`
-- `Star Wars`
+**Examples:**
+- Your favorite TV show universe
+- Your favorite movie universe
+- Your favorite book universe
+- Your own custom universe
 
-**Advanced Examples:**
-- `Season 3 of Rick and Morty`
-- `Hogwarts during Harry Potter's first year`
-- `The Marvel Cinematic Universe Avengers`
-- `Star Wars: The Clone Wars era`
-
-💡 **Tip**: The more specific, the better the story matches that universe's vibe!
+💡 **Tip**: The more specific you are, the better the story matches that universe's vibe! You can create your own universe too.
 
 ---
 
@@ -147,11 +140,11 @@ As you scroll:
 
 Let's do a full example together:
 
-### Scenario: Teaching Photosynthesis with Rick and Morty
+### Scenario: Teaching Photosynthesis with Your Favorite Universe
 
 **1. Upload Method:** File (use `examples/sample-lesson.txt`)
 
-**2. Universe:** `Rick and Morty`
+**2. Universe:** `Your favorite sci-fi universe`
 
 **3. Click:** Generate Story
 
@@ -159,12 +152,12 @@ Let's do a full example together:
 
 ```
 Scene 1:
-"Morty, we're in a plant cell, Morty!" Rick burped, waving his
-portal gun around the chloroplast. "See that green stuff? That's
-chlorophyll, Morty. It's like... it's like a solar panel, but for
-plants. Absorbs light energy and converts it to chemical energy."
+Characters explore a plant cell, discovering the chloroplast. 
+"See that green stuff? That's chlorophyll. It's like... it's like 
+a solar panel, but for plants. Absorbs light energy and converts 
+it to chemical energy."
 
-[AI-generated image of Rick and Morty inside a chloroplast]
+[AI-generated image of characters inside a chloroplast]
 
 Quiz:
 Q: What is the main function of chlorophyll?
@@ -175,7 +168,7 @@ D) Create glucose
 E) Protect the cell
 ```
 
-**5. Continue through 8-15 more scenes**, each teaching different aspects of photosynthesis through Rick and Morty's adventure!
+**5. Continue through 8-15 more scenes**, each teaching different aspects of photosynthesis through your chosen universe's adventure!
 
 ---
 
@@ -285,10 +278,10 @@ E) Protect the cell
 
 Try the same lesson in different universes:
 
-1. **Rick and Morty** - Sci-fi comedy, casual tone
-2. **Harry Potter** - Magical learning, school setting
-3. **Star Trek** - Scientific exploration, formal tone
-4. **The Office** - Office setting, relatable humor
+1. **Sci-fi comedy universe** - Casual, fun tone
+2. **Magical learning universe** - School setting, wonder-filled
+3. **Scientific exploration universe** - Formal, educational tone
+4. **Office/workplace universe** - Relatable, everyday humor
 
 See how the AI adapts the same content!
 

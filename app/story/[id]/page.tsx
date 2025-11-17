@@ -24,6 +24,7 @@ export default function StoryDetailPage() {
   const [error, setError] = useState('');
   const storyContentRef = useRef<HTMLDivElement>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const animationsPlayedRef = useRef<Set<number>>(new Set());
 
   const { scrollYProgress } = useScroll({
     container: storyContentRef,
@@ -36,7 +37,9 @@ export default function StoryDetailPage() {
     // For paragraph index, find the corresponding image index
     const imageIndex = Math.floor(paragraphIndex / 3) * 3;
     if (imageIndex < storyData.story.length && imageIndex % 3 === 0) {
-      return storyData.story[imageIndex]?.imageUrl || null;
+      const imageUrl = storyData.story[imageIndex]?.imageUrl;
+      // Return null if imageUrl is empty, null, or undefined
+      return imageUrl && imageUrl !== '' ? imageUrl : null;
     }
     return null;
   }, [storyData]);
@@ -59,7 +62,7 @@ export default function StoryDetailPage() {
     if (!data.story || data.story.length === 0) return;
 
     const paragraphsNeedingImages = data.story.filter((p, idx) =>
-      idx % 3 === 0 && p.imagePrompt && p.imagePrompt !== null && !p.imageUrl
+      idx % 3 === 0 && p.imagePrompt && p.imagePrompt !== null && (!p.imageUrl || p.imageUrl === '')
     );
 
     if (paragraphsNeedingImages.length === 0) {
@@ -70,12 +73,11 @@ export default function StoryDetailPage() {
     console.log('🎨 Starting image generation for', paragraphsNeedingImages.length, 'paragraphs');
 
     let generatedCount = 0;
-    let updatedStory = { ...data };
 
     for (let i = 0; i < data.story.length; i += 3) {
       const paragraph = data.story[i];
 
-      if (!paragraph.imagePrompt || paragraph.imagePrompt === null || paragraph.imageUrl) {
+      if (!paragraph.imagePrompt || paragraph.imagePrompt === null || (paragraph.imageUrl && paragraph.imageUrl !== '')) {
         continue;
       }
 
@@ -102,26 +104,40 @@ export default function StoryDetailPage() {
             universe: universeContext,
           });
 
-          if (response.data?.imageUrl) {
-            updatedStory.story[i] = { ...updatedStory.story[i], imageUrl: response.data.imageUrl };
-            setStoryData(updatedStory);
-            
-            // Update in Supabase
-            if (user && storyId) {
-              try {
-                await supabase
+          if (response.data?.imageUrl && response.data.imageUrl !== '') {
+            // Update state using functional update to ensure we have the latest state
+            setStoryData((prevData) => {
+              if (!prevData) return prevData;
+              const updatedStory = { ...prevData };
+              updatedStory.story = [...updatedStory.story];
+              updatedStory.story[i] = { ...updatedStory.story[i], imageUrl: response.data.imageUrl };
+              
+              // Update in Supabase
+              if (user && storyId) {
+                supabase
                   .from('stories')
                   .update({
                     story_data: updatedStory,
                   })
                   .eq('id', storyId)
-                  .eq('user_id', user.id);
-              } catch (err: any) {
-                console.error('Error updating story in database:', err);
+                  .eq('user_id', user.id)
+                  .then(({ error }) => {
+                    if (error) {
+                      console.error('Error updating story in database:', error);
+                    } else {
+                      console.log(`✅ Story updated in database for paragraph ${i}`);
+                    }
+                  })
+                  .catch((err: any) => {
+                    console.error('Error updating story in database:', err);
+                  });
               }
-            }
+              
+              return updatedStory;
+            });
+            
             imageGenerated = true;
-            console.log(`✅ Image generated successfully for paragraph ${i}`);
+            console.log(`✅ Image generated successfully for paragraph ${i}: ${response.data.imageUrl}`);
           } else {
             throw new Error('No imageUrl in response');
           }
@@ -166,7 +182,7 @@ export default function StoryDetailPage() {
 
         // Check if images need to be generated
         const needsImageGeneration = loadedStoryData.story.some(
-          (p: any, idx: number) => idx % 3 === 0 && p.imagePrompt && !p.imageUrl
+          (p: any, idx: number) => idx % 3 === 0 && p.imagePrompt && (!p.imageUrl || p.imageUrl === '')
         );
 
         if (needsImageGeneration) {
@@ -185,34 +201,43 @@ export default function StoryDetailPage() {
     }
   }, [user, storyId, router, supabase, generateImages]);
 
-  // Update active image based on scroll position
+  // Update active image based on scroll position (throttled for better performance)
   useEffect(() => {
     if (!storyData) return;
 
+    let ticking = false;
+
     const handleScroll = () => {
-      if (!storyContentRef.current) return;
-
-      const paragraphs = storyContentRef.current.querySelectorAll('[data-paragraph-index]');
-      const scrollPosition = window.scrollY + window.innerHeight / 2;
-
-      for (let i = 0; i < paragraphs.length; i++) {
-        const element = paragraphs[i] as HTMLElement;
-        const rect = element.getBoundingClientRect();
-        const elementTop = rect.top + window.scrollY;
-        const elementBottom = elementTop + rect.height;
-
-        if (scrollPosition >= elementTop && scrollPosition < elementBottom) {
-          const paragraphIndex = parseInt(element.getAttribute('data-paragraph-index') || '0');
-          // Direct calculation: Math.floor(paragraphIndex / 3) * 3
-          // This ensures: paragraphs 0-2 → image 0, paragraphs 3-5 → image 3, paragraphs 6-8 → image 6, etc.
-          const imageIndex = Math.floor(paragraphIndex / 3) * 3;
-          
-          // Verify image index is valid (image may still be loading)
-          if (imageIndex < storyData.story.length) {
-            setActiveImageIndex(imageIndex);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          if (!storyContentRef.current) {
+            ticking = false;
+            return;
           }
-          break;
-        }
+
+          const paragraphs = storyContentRef.current.querySelectorAll('[data-paragraph-index]');
+          const scrollPosition = window.scrollY + window.innerHeight / 2;
+
+          for (let i = 0; i < paragraphs.length; i++) {
+            const element = paragraphs[i] as HTMLElement;
+            const rect = element.getBoundingClientRect();
+            const elementTop = rect.top + window.scrollY;
+            const elementBottom = elementTop + rect.height;
+
+            if (scrollPosition >= elementTop && scrollPosition < elementBottom) {
+              const paragraphIndex = parseInt(element.getAttribute('data-paragraph-index') || '0');
+              const imageIndex = Math.floor(paragraphIndex / 3) * 3;
+              
+              if (imageIndex < storyData.story.length && imageIndex !== activeImageIndex) {
+                setActiveImageIndex(imageIndex);
+              }
+              ticking = false;
+              return;
+            }
+          }
+          ticking = false;
+        });
+        ticking = true;
       }
     };
 
@@ -220,10 +245,10 @@ export default function StoryDetailPage() {
     handleScroll(); // Initial call
 
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [storyData]);
+  }, [storyData, activeImageIndex]);
 
   if (isLoading) {
-    return <FullPageLoader message="Loading your episode..." />;
+    return <FullPageLoader message="Loading your episode..." showSnake={false} />;
   }
 
   if (error || !storyData) {
@@ -345,24 +370,29 @@ export default function StoryDetailPage() {
           {/* Story Paragraphs */}
           {storyData.story.map((paragraph: any, index: number) => {
             const imageUrl = getImageUrl(index);
+            const hasAnimated = animationsPlayedRef.current.has(index);
             
             return (
               <motion.section
                 key={index}
                 data-paragraph-index={index}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-100px' }}
-                transition={{ duration: 0.6 }}
+                initial={{ opacity: hasAnimated ? 1 : 0, y: hasAnimated ? 0 : 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={hasAnimated ? { duration: 0 } : { duration: 0.6, delay: index * 0.05 }}
+                onAnimationComplete={() => {
+                  if (!hasAnimated) {
+                    animationsPlayedRef.current.add(index);
+                  }
+                }}
                 className="min-h-screen flex items-center justify-center px-4 py-20"
               >
                 <div className="max-w-3xl mx-auto w-full space-y-8">
                   {/* Mobile Image */}
                   {index % 3 === 0 && (
                     <motion.div
-                      initial={{ opacity: 0 }}
-                      whileInView={{ opacity: 1 }}
-                      viewport={{ once: true }}
+                      initial={{ opacity: hasAnimated ? 1 : 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={hasAnimated ? { duration: 0 } : { duration: 0.4, delay: index * 0.05 + 0.1 }}
                       className="lg:hidden relative aspect-square rounded-[28px] border border-white/15 bg-black/30 p-3 shadow-lg"
                     >
                       <div className="relative h-full w-full rounded-2xl overflow-hidden bg-black/40 flex items-center justify-center p-2">
@@ -393,10 +423,9 @@ export default function StoryDetailPage() {
                   {/* Paragraph Text */}
                   {paragraph.paragraph && (
                     <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: 0.1 }}
+                      initial={{ opacity: hasAnimated ? 1 : 0, y: hasAnimated ? 0 : 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={hasAnimated ? { duration: 0 } : { duration: 0.5, delay: index * 0.05 + 0.2 }}
                       className="bg-black/40 border border-white/10 rounded-2xl p-8 md:p-10 backdrop-blur-xl"
                     >
                       <p className="text-lg md:text-xl leading-relaxed text-white/90 whitespace-pre-wrap">
@@ -408,10 +437,9 @@ export default function StoryDetailPage() {
                   {/* Quiz */}
                   {paragraph.quiz && (
                     <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: 0.2 }}
+                      initial={{ opacity: hasAnimated ? 1 : 0, y: hasAnimated ? 0 : 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={hasAnimated ? { duration: 0 } : { duration: 0.5, delay: index * 0.05 + 0.3 }}
                       className="bg-black/40 border border-white/10 rounded-2xl p-6 backdrop-blur-xl"
                     >
                       <Quiz

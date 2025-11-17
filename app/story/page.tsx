@@ -29,6 +29,7 @@ export default function StoryPage() {
   const pdfContentRef = useRef<HTMLDivElement>(null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const animationsPlayedRef = useRef<Set<number>>(new Set());
 
   // Find which image should be displayed for a given paragraph index
   // Algorithm: Images are at indices 0, 3, 6, 9, ...
@@ -235,34 +236,43 @@ export default function StoryPage() {
     }
   }, [router, generateImages]);
 
-  // Update active image based on scroll position
+  // Update active image based on scroll position (throttled for better performance)
   useEffect(() => {
     if (!storyData) return;
 
+    let ticking = false;
+
     const handleScroll = () => {
-      if (!storyContentRef.current) return;
-
-      const paragraphs = storyContentRef.current.querySelectorAll('[data-paragraph-index]');
-      const scrollPosition = window.scrollY + window.innerHeight / 2;
-
-      for (let i = 0; i < paragraphs.length; i++) {
-        const element = paragraphs[i] as HTMLElement;
-        const rect = element.getBoundingClientRect();
-        const elementTop = rect.top + window.scrollY;
-        const elementBottom = elementTop + rect.height;
-
-        if (scrollPosition >= elementTop && scrollPosition < elementBottom) {
-          const paragraphIndex = parseInt(element.getAttribute('data-paragraph-index') || '0');
-          // Direct calculation: Math.floor(paragraphIndex / 3) * 3
-          // This ensures: paragraphs 0-2 → image 0, paragraphs 3-5 → image 3, paragraphs 6-8 → image 6, etc.
-          const imageIndex = Math.floor(paragraphIndex / 3) * 3;
-          
-          // Verify image index is valid (image may still be loading)
-          if (imageIndex < storyData.story.length) {
-            setActiveImageIndex(imageIndex);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          if (!storyContentRef.current) {
+            ticking = false;
+            return;
           }
-          break;
-        }
+
+          const paragraphs = storyContentRef.current.querySelectorAll('[data-paragraph-index]');
+          const scrollPosition = window.scrollY + window.innerHeight / 2;
+
+          for (let i = 0; i < paragraphs.length; i++) {
+            const element = paragraphs[i] as HTMLElement;
+            const rect = element.getBoundingClientRect();
+            const elementTop = rect.top + window.scrollY;
+            const elementBottom = elementTop + rect.height;
+
+            if (scrollPosition >= elementTop && scrollPosition < elementBottom) {
+              const paragraphIndex = parseInt(element.getAttribute('data-paragraph-index') || '0');
+              const imageIndex = Math.floor(paragraphIndex / 3) * 3;
+              
+              if (imageIndex < storyData.story.length && imageIndex !== activeImageIndex) {
+                setActiveImageIndex(imageIndex);
+              }
+              ticking = false;
+              return;
+            }
+          }
+          ticking = false;
+        });
+        ticking = true;
       }
     };
 
@@ -270,7 +280,7 @@ export default function StoryPage() {
     handleScroll(); // Initial call
 
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [storyData]);
+  }, [storyData, activeImageIndex]);
 
   const handleQuizRegenerate = (index: number) => (newQuiz: QuizType) => {
     setStoryData((prevData) => {
@@ -288,7 +298,7 @@ export default function StoryPage() {
   };
 
   if (isLoading) {
-    return <FullPageLoader message="Loading your episode..." />;
+    return <FullPageLoader message="Loading your episode..." showSnake={true} />;
   }
 
   if (error) {
@@ -452,24 +462,29 @@ export default function StoryPage() {
           {/* Story Paragraphs */}
           {storyData.story.map((paragraph: any, index: number) => {
             const imageUrl = getImageUrl(index);
+            const hasAnimated = animationsPlayedRef.current.has(index);
             
             return (
               <motion.section
                 key={index}
                 data-paragraph-index={index}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-100px' }}
-                transition={{ duration: 0.6 }}
+                initial={{ opacity: hasAnimated ? 1 : 0, y: hasAnimated ? 0 : 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={hasAnimated ? { duration: 0 } : { duration: 0.6, delay: index * 0.05 }}
+                onAnimationComplete={() => {
+                  if (!hasAnimated) {
+                    animationsPlayedRef.current.add(index);
+                  }
+                }}
                 className="min-h-screen flex items-center justify-center px-4 py-20"
               >
                 <div className="max-w-3xl mx-auto w-full space-y-8">
                   {/* Mobile Image */}
                   {imageUrl && (
                     <motion.div
-                      initial={{ opacity: 0 }}
-                      whileInView={{ opacity: 1 }}
-                      viewport={{ once: true }}
+                      initial={{ opacity: hasAnimated ? 1 : 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={hasAnimated ? { duration: 0 } : { duration: 0.4, delay: index * 0.05 + 0.1 }}
                       className="lg:hidden relative aspect-square rounded-[28px] border border-white/15 bg-black/30 p-3 shadow-lg"
                     >
                       <div className="relative h-full w-full rounded-2xl overflow-hidden bg-black/40 flex items-center justify-center p-2">
@@ -491,10 +506,9 @@ export default function StoryPage() {
                   {/* Paragraph Text */}
                   {paragraph.paragraph && (
                     <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: 0.1 }}
+                      initial={{ opacity: hasAnimated ? 1 : 0, y: hasAnimated ? 0 : 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={hasAnimated ? { duration: 0 } : { duration: 0.5, delay: index * 0.05 + 0.2 }}
                       className="bg-black/40 border border-white/10 rounded-2xl p-8 md:p-10 backdrop-blur-xl"
                     >
                       <p className="text-lg md:text-xl leading-relaxed text-white/90 whitespace-pre-wrap">
@@ -506,10 +520,9 @@ export default function StoryPage() {
                   {/* Quiz */}
                   {paragraph.quiz && (
                     <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: 0.2 }}
+                      initial={{ opacity: hasAnimated ? 1 : 0, y: hasAnimated ? 0 : 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={hasAnimated ? { duration: 0 } : { duration: 0.5, delay: index * 0.05 + 0.3 }}
                       className="bg-black/40 border border-white/10 rounded-2xl p-6 backdrop-blur-xl"
                     >
                       <Quiz

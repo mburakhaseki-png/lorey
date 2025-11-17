@@ -6,18 +6,18 @@ import { useRouter } from 'next/navigation';
 import { useDropzone } from 'react-dropzone';
 import axios from 'axios';
 import { validateLessonText } from '@/utils/parseLesson';
-import Loader from '@/components/Loader';
+import { FullPageLoader } from '@/components/Loader';
 import Header from '@/components/Header';
 import AuthModal from '@/components/AuthModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/utils/supabase/client';
 import type { StoryData } from '@/utils/types';
 
-type UploadType = 'file' | 'url' | 'youtube' | null;
+type UploadType = 'file' | null;
 
 const heroQuotes = [
   "My mom never realizes I'm studying.",
-  "From boring class notes to a Rick and Morty episode.",
+  "From boring class notes to an epic episode.",
   "Study like a binge session.",
   "Homework… but it slaps."
 ];
@@ -26,9 +26,8 @@ export default function HomePage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const supabase = createClient();
-  const [uploadType, setUploadType] = useState<UploadType>(null);
+  const [uploadType, setUploadType] = useState<UploadType>('file');
   const [file, setFile] = useState<File | null>(null);
-  const [url, setUrl] = useState('');
   const [universe, setUniverse] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -71,8 +70,8 @@ export default function HomePage() {
     }
 
 
-    if (!uploadType || (!file && !url)) {
-      setError('Please select an upload method and provide content');
+    if (!uploadType || !file) {
+      setError('Please upload a file');
       return;
     }
 
@@ -101,10 +100,6 @@ export default function HomePage() {
           const formData = new FormData();
           formData.append('file', file);
           const extractResponse = await axios.post(finalUrl, formData);
-          lessonText = extractResponse.data.text;
-        } else if ((uploadType === 'url' || uploadType === 'youtube') && url) {
-          const finalUrl = `${apiUrl}/api/extract/url`;
-          const extractResponse = await axios.post(finalUrl, { url });
           lessonText = extractResponse.data.text;
         }
 
@@ -137,11 +132,11 @@ export default function HomePage() {
       
       const response = await axios.post(finalUrl, {
         lessonText,
-        universe: universe || 'Rick and Morty'
+        universe: universe || 'Custom Universe'
       });
 
       const storyData: StoryData = response.data;
-      const storyUniverse = universe || 'Rick and Morty';
+      const storyUniverse = universe || 'Custom Universe';
 
       // Save to sessionStorage for immediate viewing
       sessionStorage.setItem('storyData', JSON.stringify(storyData));
@@ -182,11 +177,7 @@ export default function HomePage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader message="Creating your episode..." />
-      </div>
-    );
+    return <FullPageLoader message="Creating your episode..." showSnake={true} />;
   }
 
   return (
@@ -240,7 +231,7 @@ export default function HomePage() {
               {/* Stats Pills */}
               <div className="flex flex-wrap gap-3">
                 <div className="px-4 py-2 bg-white/5 border border-white/10 rounded-full text-sm">
-                  <span className="font-semibold">148</span> universes
+                  <span className="font-semibold">∞</span> universes
                 </div>
                 <div className="px-4 py-2 bg-white/5 border border-white/10 rounded-full text-sm">
                   <span className="font-semibold">42 min</span> avg session
@@ -263,41 +254,8 @@ export default function HomePage() {
                 <p className="text-white/60 text-sm">Drop your content, pick a universe.</p>
               </div>
 
-              <div className="space-y-6">
-                  {/* Upload Type Selection */}
-                  <div>
-                    <label className="block text-sm font-medium text-white/70 mb-3">
-                      1. Choose source
-                    </label>
-                    <div className="grid grid-cols-3 gap-3">
-                      {[
-                        { type: 'file' as UploadType, icon: '📄', label: 'File' },
-                        { type: 'url' as UploadType, icon: '🌐', label: 'URL' },
-                        { type: 'youtube' as UploadType, icon: '🎥', label: 'YouTube' },
-                      ].map((option) => (
-                        <motion.button
-                          key={option.type}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => {
-                            setUploadType(option.type);
-                            setError('');
-                          }}
-                          className={`p-4 rounded-lg border transition-all ${
-                            uploadType === option.type
-                              ? 'border-red-600 bg-red-600/10'
-                              : 'border-white/10 bg-white/5 hover:border-white/20'
-                          }`}
-                        >
-                          <div className="text-2xl mb-1">{option.icon}</div>
-                          <div className="text-xs font-medium">{option.label}</div>
-                        </motion.button>
-                      ))}
-                    </div>
-                  </div>
-
+                <div className="space-y-6">
                   {/* File Upload */}
-                  {uploadType === 'file' && (
                     <div
                       {...getRootProps()}
                       className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all ${
@@ -318,29 +276,20 @@ export default function HomePage() {
                         </div>
                       )}
                     </div>
-                  )}
-
-                  {/* URL Input */}
-                  {(uploadType === 'url' || uploadType === 'youtube') && (
-                    <input
-                      type="url"
-                      value={url}
-                      onChange={(e) => setUrl(e.target.value)}
-                      placeholder={uploadType === 'youtube' ? 'YouTube URL' : 'Website URL'}
-                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:border-red-600 focus:outline-none transition-all"
-                    />
-                  )}
 
                   {/* Universe Input */}
                   <div>
                     <label className="block text-sm font-medium text-white/70 mb-3">
                       2. Pick universe
+                      <span className="ml-2 text-xs text-white/50 font-normal italic">
+                        (works better with animated universes)
+                      </span>
                     </label>
                     <input
                       type="text"
                       value={universe}
                       onChange={(e) => setUniverse(e.target.value)}
-                      placeholder="e.g., Rick and Morty, Harry Potter..."
+                      placeholder="Enter your favorite universe..."
                       className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:border-red-600 focus:outline-none transition-all"
                     />
                   </div>
@@ -358,7 +307,7 @@ export default function HomePage() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleGenerateStory}
-                disabled={!uploadType || (!file && !url) || isLoading}
+                disabled={!uploadType || !file || isLoading}
                 className="w-full netflix-button disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Start episode
@@ -368,83 +317,242 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* How It Works - Minimal 3 Steps */}
-      <section className="relative py-20 px-4">
-        <div className="max-w-5xl mx-auto">
+      {/* Lorey Loop */}
+      <section className="relative py-24 px-4 border-t border-white/10 bg-black/40">
+        <div className="max-w-6xl mx-auto space-y-16">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-12"
+            className="text-center space-y-4"
           >
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              <span className="text-gradient">How it works</span>
-            </h2>
-            <p className="text-white/70 text-lg">Three simple steps to binge-worthy studying</p>
+            <p className="text-white/40 text-xs tracking-[0.4em] uppercase">Lorey Originals</p>
+            <h2 className="text-4xl md:text-5xl font-bold text-white">From notes to red-carpet episodes.</h2>
+            <p className="text-white/60 text-lg max-w-3xl mx-auto">
+              Swipe through your study session like it just premiered. Minimal effort, maximum retention.
+            </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-8">
             {[
               {
-                step: '01',
-                title: 'Drop the source',
-                description: 'TXT, PDF, URL, or YouTube captions.'
+                title: 'Upload + forget',
+                description: 'TXT or PDF. We scrub, clean, and prep it like a show runner.',
+                tag: 'Step 01',
               },
               {
-                step: '02',
-                title: 'Pick your world',
-                description: 'Rick & Morty? Hogwarts? Your choice.'
+                title: 'Pick the universe',
+                description: 'Choose any universe you love. Your own fan fiction works too. Tone + visuals adapt instantly.',
+                tag: 'Step 02',
               },
               {
-                step: '03',
-                title: 'Binge the episode',
-                description: 'Scenes, quizzes, visuals—all automatic.'
-              }
+                title: 'Hit play',
+                description: 'Episode drops with scenes, quizzes, cliffhangers. You binge, you learn.',
+                tag: 'Step 03',
+              },
             ].map((item, index) => (
               <motion.div
-                key={item.step}
+                key={item.title}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
-                className="cinematic-card p-6 space-y-3"
+                className="relative p-6 border border-white/10 rounded-3xl bg-white/5 backdrop-blur"
               >
-                <div className="text-3xl font-bold text-white/20">{item.step}</div>
-                <h3 className="text-xl font-semibold">{item.title}</h3>
-                <p className="text-white/60 text-sm">{item.description}</p>
+                <div className="text-white/40 text-xs uppercase tracking-[0.3em] mb-4">{item.tag}</div>
+                <h3 className="text-2xl font-semibold text-white mb-3">{item.title}</h3>
+                <p className="text-white/60 text-sm leading-relaxed">{item.description}</p>
+                <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+              </motion.div>
+            ))}
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="flex flex-wrap justify-center gap-4 text-xs text-white/50 uppercase tracking-[0.4em]"
+          >
+            {['No PDFs to format', 'No templates', 'No boring slides'].map((text) => (
+              <span key={text} className="px-4 py-2 border border-white/10 rounded-full">
+                {text}
+              </span>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Feature Billboard */}
+      <section className="relative py-24 px-4 bg-black/60 border-y border-white/5 overflow-hidden">
+        <div className="absolute inset-0 opacity-30 pointer-events-none">
+          <div className="absolute -top-10 left-1/3 w-72 h-72 bg-red-600/30 blur-[140px]" />
+          <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-purple-600/30 blur-[180px]" />
+        </div>
+        <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 items-center relative z-10">
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            className="space-y-6"
+          >
+            <p className="text-white/40 text-xs tracking-[0.4em] uppercase">Why Lorey</p>
+            <h2 className="text-4xl md:text-5xl font-bold leading-tight">
+              The learning pipeline
+              <span className="block text-gradient-red">built like a streaming platform.</span>
+              </h2>
+              <p className="text-white/70 text-lg">
+              Every touchpoint is designed to feel premium, modern, fast. No dashboards. No clutter. Just cinematic focus.
+              </p>
+
+            <div className="space-y-4">
+              {[
+                {
+                  title: 'Cinematic engine',
+                  detail: 'AI art direction tuned for bold colors, dramatic lighting, and universe accuracy.',
+                },
+                {
+                  title: 'Quiz scripting',
+                  detail: 'Micro-interactions replace traditional tests. You barely notice you\'re being assessed.',
+                },
+                {
+                  title: 'Session pacing',
+                  detail: 'Episodes clock in at ~8 minutes with cliffhangers to push you forward.',
+                },
+              ].map((item, index) => (
+                <div key={item.title} className="flex items-start gap-4">
+                  <div className="text-white/50 text-sm mt-1">{String(index + 1).padStart(2, '0')}</div>
+                  <div>
+                    <p className="text-white font-semibold">{item.title}</p>
+                    <p className="text-white/60 text-sm">{item.detail}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            className="relative border border-white/10 rounded-[32px] overflow-hidden bg-black/50 shadow-2xl"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-red-600/20 to-transparent" />
+            <div className="relative p-8 space-y-6">
+              <div className="flex items-center justify-between text-sm text-white/60 uppercase tracking-[0.3em]">
+                <span>Episode Builder</span>
+                <span>Live</span>
+              </div>
+              <div className="space-y-4">
+                <div className="rounded-2xl border border-white/10 p-4 bg-white/5">
+                  <p className="text-white text-sm uppercase tracking-[0.3em] mb-1">Universe</p>
+                  <p className="text-white text-2xl font-semibold">"Your Universe"</p>
+                  <p className="text-white/60 text-xs">Season 02 · Episode 07</p>
+                </div>
+                <div className="space-y-3">
+                  {['Scene visuals', 'Dialogue beats', 'Quiz moments'].map((label, idx) => (
+                    <div key={label} className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full bg-red-500" />
+                      <p className="text-white/70 text-sm">{label}</p>
+                      <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-red-500 to-orange-500"
+                          style={{ width: `${40 + idx * 20}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Proof Strip */}
+      <section className="relative py-16 px-4 bg-black/30 border-b border-white/5">
+        <div className="max-w-5xl mx-auto grid md:grid-cols-4 gap-6 text-center">
+          {[
+            { label: 'Retention lift', value: '10x' },
+            { label: 'Average watch time', value: '42 min' },
+            { label: 'Students who finish', value: '91%' },
+            { label: 'Universes available', value: '∞' },
+          ].map((item, index) => (
+            <motion.div
+              key={item.label}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.1 }}
+              className="space-y-2"
+            >
+              <p className="text-4xl font-bold text-white">{item.value}</p>
+              <p className="text-white/50 text-sm uppercase tracking-[0.3em]">{item.label}</p>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="relative py-24 px-4">
+        <div className="max-w-5xl mx-auto space-y-12">
+          <div className="text-center space-y-3">
+            <p className="text-white/40 text-xs tracking-[0.4em] uppercase">Fans of binge-learning</p>
+            <h2 className="text-4xl md:text-5xl font-bold text-white">“It feels illegal to study this way.”</h2>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            {[
+              {
+                quote: 'Lorey turned my pharmacology notes into a gritty medical drama. I stopped zoning out.',
+                author: 'Leyla · Med Student',
+              },
+              {
+                quote: 'I watch a “lesson” before sleep the way I used to watch trailers. Grades went up.',
+                author: 'Arda · High School Senior',
+              },
+            ].map((item, index) => (
+              <motion.div
+                key={item.author}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                className="p-6 border border-white/10 rounded-3xl bg-white/5"
+              >
+                <p className="text-white/90 text-lg leading-relaxed">“{item.quote}”</p>
+                <p className="text-white/50 text-sm mt-4">{item.author}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Why It Works - Simple Explanation */}
-      <section className="relative py-20 px-4 bg-black/20">
-        <div className="max-w-5xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <h2 className="text-4xl md:text-5xl font-bold mb-4">
-                Your brain loves stories more than textbooks.
-              </h2>
-              <p className="text-white/70 text-lg">
-                Stories trigger memory anchors. Dialog beats bullet points. Micro-choices force recall without feeling like tests.
-              </p>
-            </div>
-            <div className="space-y-4">
-              {[
-                'Stories trigger memory anchors',
-                'Dialog beats bullet points',
-                'Micro-choices force recall'
-              ].map((item, index) => (
-                <div key={index} className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-red-600/20 border border-red-600/40 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <div className="w-2 h-2 rounded-full bg-red-600" />
-                  </div>
-                  <p className="text-white/80">{item}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+      {/* Final CTA - Minimal */}
+      <section className="relative py-24 px-4 bg-gradient-to-b from-black/30 to-black border-y border-white/5">
+        <div className="max-w-4xl mx-auto text-center space-y-8">
+          <p className="text-white/40 text-xs tracking-[0.4em] uppercase">Ready?</p>
+          <h2 className="text-4xl md:text-5xl font-bold text-white">
+            Press play on your next study session.
+          </h2>
+          <p className="text-white/60 text-lg max-w-2xl mx-auto">
+            Build your first episode in under two minutes. No credit card. No templates. Just premium learning vibes.
+          </p>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => {
+              if (!authLoading && !user) {
+                setAuthMode('signup');
+                setAuthModalOpen(true);
+              } else {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+            }}
+            className="netflix-button text-lg px-10 py-4"
+          >
+            Launch Lorey
+          </motion.button>
+          <p className="text-white/40 text-xs uppercase tracking-[0.4em]">No strings attached</p>
         </div>
       </section>
 
