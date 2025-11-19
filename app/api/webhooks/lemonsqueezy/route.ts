@@ -87,15 +87,34 @@ async function handleOrderCreated(data: any) {
   console.log('📦 Order data:', JSON.stringify(data, null, 2));
 
   // Try multiple paths for custom_data (LemonSqueezy can send it in different places)
-  const userId = 
+  let userId = 
     data.attributes?.custom_data?.user_id ||
     data.attributes?.meta?.custom_data?.user_id ||
     data.attributes?.first_order_item?.custom_data?.user_id ||
-    data.attributes?.first_order_item?.meta?.custom_data?.user_id;
+    data.attributes?.first_order_item?.meta?.custom_data?.user_id ||
+    data.attributes?.custom?.user_id ||
+    data.attributes?.meta?.custom?.user_id;
   
   const variantId = data.attributes?.first_order_item?.variant_id;
+  const customerEmail = data.attributes?.user_email || data.attributes?.customer_email;
 
-  console.log('🔍 Extracted userId:', userId, 'variantId:', variantId);
+  console.log('🔍 Extracted userId:', userId, 'variantId:', variantId, 'customerEmail:', customerEmail);
+
+  // If userId not found, try to find user by email
+  if (!userId && customerEmail) {
+    console.log('🔍 userId not found, trying to find user by email:', customerEmail);
+    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.listUsers();
+    
+    if (!userError && userData?.users) {
+      const user = userData.users.find(u => u.email === customerEmail);
+      if (user) {
+        userId = user.id;
+        console.log('✅ Found user by email:', userId);
+      } else {
+        console.warn('⚠️ User not found with email:', customerEmail);
+      }
+    }
+  }
 
   if (!userId || !variantId) {
     console.error('❌ Missing user_id or variant_id in order_created');
@@ -104,6 +123,9 @@ async function handleOrderCreated(data: any) {
       'data.attributes.meta.custom_data': data.attributes?.meta?.custom_data,
       'data.attributes.first_order_item.custom_data': data.attributes?.first_order_item?.custom_data,
       'data.attributes.first_order_item': data.attributes?.first_order_item,
+      'data.attributes.custom': data.attributes?.custom,
+      'data.attributes.meta.custom': data.attributes?.meta?.custom,
+      'customerEmail': customerEmail,
     });
     return;
   }
@@ -157,15 +179,33 @@ async function handleSubscriptionCreated(data: any) {
   console.log('📨 Subscription data:', JSON.stringify(data, null, 2));
 
   // Try multiple paths for custom_data (LemonSqueezy can send it in different places)
-  const userId = 
+  let userId = 
     data.attributes?.custom_data?.user_id ||
     data.attributes?.meta?.custom_data?.user_id ||
-    data.attributes?.meta?.custom?.user_id;
+    data.attributes?.meta?.custom?.user_id ||
+    data.attributes?.custom?.user_id;
   
   const subscriptionId = data.id;
   const variantId = data.attributes?.variant_id;
+  const customerEmail = data.attributes?.user_email || data.attributes?.customer_email;
 
-  console.log('🔍 Extracted userId:', userId, 'subscriptionId:', subscriptionId, 'variantId:', variantId);
+  console.log('🔍 Extracted userId:', userId, 'subscriptionId:', subscriptionId, 'variantId:', variantId, 'customerEmail:', customerEmail);
+
+  // If userId not found, try to find user by email
+  if (!userId && customerEmail) {
+    console.log('🔍 userId not found, trying to find user by email:', customerEmail);
+    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.listUsers();
+    
+    if (!userError && userData?.users) {
+      const user = userData.users.find(u => u.email === customerEmail);
+      if (user) {
+        userId = user.id;
+        console.log('✅ Found user by email:', userId);
+      } else {
+        console.warn('⚠️ User not found with email:', customerEmail);
+      }
+    }
+  }
 
   if (!userId || !variantId) {
     console.error('❌ Missing user_id or variant_id in subscription_created');
@@ -173,7 +213,9 @@ async function handleSubscriptionCreated(data: any) {
       'data.attributes.custom_data': data.attributes?.custom_data,
       'data.attributes.meta.custom_data': data.attributes?.meta?.custom_data,
       'data.attributes.meta.custom': data.attributes?.meta?.custom,
+      'data.attributes.custom': data.attributes?.custom,
       'data.attributes': Object.keys(data.attributes || {}),
+      'customerEmail': customerEmail,
     });
     return;
   }
