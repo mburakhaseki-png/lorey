@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     console.log('📨 Received Lemon Squeezy webhook:', body.meta?.event_name);
+    console.log('📦 Full webhook payload:', JSON.stringify(body, null, 2));
 
     // Verify webhook signature (if secret is set)
     if (LEMONSQUEEZY_WEBHOOK_SECRET) {
@@ -83,12 +84,27 @@ export async function POST(request: NextRequest) {
 
 async function handleOrderCreated(data: any) {
   console.log('📦 Processing order_created');
+  console.log('📦 Order data:', JSON.stringify(data, null, 2));
 
-  const userId = data.attributes.custom_data?.user_id;
-  const variantId = data.attributes.first_order_item?.variant_id;
+  // Try multiple paths for custom_data (LemonSqueezy can send it in different places)
+  const userId = 
+    data.attributes?.custom_data?.user_id ||
+    data.attributes?.meta?.custom_data?.user_id ||
+    data.attributes?.first_order_item?.custom_data?.user_id ||
+    data.attributes?.first_order_item?.meta?.custom_data?.user_id;
+  
+  const variantId = data.attributes?.first_order_item?.variant_id;
+
+  console.log('🔍 Extracted userId:', userId, 'variantId:', variantId);
 
   if (!userId || !variantId) {
     console.error('❌ Missing user_id or variant_id in order_created');
+    console.error('❌ Available paths:', {
+      'data.attributes.custom_data': data.attributes?.custom_data,
+      'data.attributes.meta.custom_data': data.attributes?.meta?.custom_data,
+      'data.attributes.first_order_item.custom_data': data.attributes?.first_order_item?.custom_data,
+      'data.attributes.first_order_item': data.attributes?.first_order_item,
+    });
     return;
   }
 
@@ -104,40 +120,61 @@ async function handleOrderCreated(data: any) {
   const endDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
 
   // Create subscription record
-  const { error } = await supabaseAdmin
+  const subscriptionData = {
+    user_id: userId,
+    lemonsqueezy_order_id: data.id,
+    lemonsqueezy_customer_id: data.attributes?.customer_id?.toString(),
+    lemonsqueezy_product_id: data.attributes?.first_order_item?.product_id?.toString(),
+    lemonsqueezy_variant_id: variantId.toString(),
+    plan_name: planName,
+    status: 'active',
+    story_limit: plan.storyLimit,
+    stories_used: 0,
+    subscription_start_date: now.toISOString(),
+    subscription_end_date: endDate.toISOString(),
+    current_period_start: now.toISOString(),
+    current_period_end: endDate.toISOString(),
+  };
+
+  console.log('💾 Inserting subscription with data:', JSON.stringify(subscriptionData, null, 2));
+
+  const { data: insertedData, error } = await supabaseAdmin
     .from('subscriptions')
-    .insert({
-      user_id: userId,
-      lemonsqueezy_order_id: data.id,
-      lemonsqueezy_customer_id: data.attributes.customer_id?.toString(),
-      lemonsqueezy_product_id: data.attributes.first_order_item?.product_id?.toString(),
-      lemonsqueezy_variant_id: variantId.toString(),
-      plan_name: planName,
-      status: 'active',
-      story_limit: plan.storyLimit,
-      stories_used: 0,
-      subscription_start_date: now.toISOString(),
-      subscription_end_date: endDate.toISOString(),
-      current_period_start: now.toISOString(),
-      current_period_end: endDate.toISOString(),
-    });
+    .insert(subscriptionData)
+    .select();
 
   if (error) {
     console.error('❌ Error creating subscription:', error);
+    console.error('❌ Error details:', JSON.stringify(error, null, 2));
   } else {
     console.log('✅ Subscription created for user:', userId, 'Plan:', planName);
+    console.log('✅ Inserted data:', JSON.stringify(insertedData, null, 2));
   }
 }
 
 async function handleSubscriptionCreated(data: any) {
   console.log('📨 Processing subscription_created');
+  console.log('📨 Subscription data:', JSON.stringify(data, null, 2));
 
-  const userId = data.attributes.custom_data?.user_id;
+  // Try multiple paths for custom_data (LemonSqueezy can send it in different places)
+  const userId = 
+    data.attributes?.custom_data?.user_id ||
+    data.attributes?.meta?.custom_data?.user_id ||
+    data.attributes?.meta?.custom?.user_id;
+  
   const subscriptionId = data.id;
-  const variantId = data.attributes.variant_id;
+  const variantId = data.attributes?.variant_id;
+
+  console.log('🔍 Extracted userId:', userId, 'subscriptionId:', subscriptionId, 'variantId:', variantId);
 
   if (!userId || !variantId) {
     console.error('❌ Missing user_id or variant_id in subscription_created');
+    console.error('❌ Available paths:', {
+      'data.attributes.custom_data': data.attributes?.custom_data,
+      'data.attributes.meta.custom_data': data.attributes?.meta?.custom_data,
+      'data.attributes.meta.custom': data.attributes?.meta?.custom,
+      'data.attributes': Object.keys(data.attributes || {}),
+    });
     return;
   }
 
@@ -153,51 +190,77 @@ async function handleSubscriptionCreated(data: any) {
   const endDate = new Date(data.attributes.renews_at || now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
   // Upsert subscription record
-  const { error } = await supabaseAdmin
+  const subscriptionData = {
+    user_id: userId,
+    lemonsqueezy_subscription_id: subscriptionId,
+    lemonsqueezy_customer_id: data.attributes?.customer_id?.toString(),
+    lemonsqueezy_product_id: data.attributes?.product_id?.toString(),
+    lemonsqueezy_variant_id: variantId.toString(),
+    plan_name: planName,
+    status: data.attributes?.status === 'active' ? 'active' : 'past_due',
+    story_limit: plan.storyLimit,
+    stories_used: 0,
+    subscription_start_date: data.attributes?.created_at || now.toISOString(),
+    subscription_end_date: endDate.toISOString(),
+    current_period_start: data.attributes?.renews_at ? new Date(data.attributes.renews_at).toISOString() : now.toISOString(),
+    current_period_end: endDate.toISOString(),
+  };
+
+  console.log('💾 Upserting subscription with data:', JSON.stringify(subscriptionData, null, 2));
+
+  const { data: upsertedData, error } = await supabaseAdmin
     .from('subscriptions')
-    .upsert({
-      user_id: userId,
-      lemonsqueezy_subscription_id: subscriptionId,
-      lemonsqueezy_customer_id: data.attributes.customer_id?.toString(),
-      lemonsqueezy_product_id: data.attributes.product_id?.toString(),
-      lemonsqueezy_variant_id: variantId.toString(),
-      plan_name: planName,
-      status: data.attributes.status === 'active' ? 'active' : 'past_due',
-      story_limit: plan.storyLimit,
-      stories_used: 0,
-      subscription_start_date: data.attributes.created_at,
-      subscription_end_date: endDate.toISOString(),
-      current_period_start: data.attributes.renews_at ? new Date(data.attributes.renews_at).toISOString() : now.toISOString(),
-      current_period_end: endDate.toISOString(),
-    }, {
+    .upsert(subscriptionData, {
       onConflict: 'lemonsqueezy_subscription_id'
-    });
+    })
+    .select();
 
   if (error) {
     console.error('❌ Error upserting subscription:', error);
+    console.error('❌ Error details:', JSON.stringify(error, null, 2));
   } else {
     console.log('✅ Subscription upserted for user:', userId, 'Plan:', planName);
+    console.log('✅ Upserted data:', JSON.stringify(upsertedData, null, 2));
   }
 }
 
 async function handleSubscriptionUpdated(data: any) {
   console.log('🔄 Processing subscription_updated');
+  console.log('🔄 Subscription update data:', JSON.stringify(data, null, 2));
 
   const subscriptionId = data.id;
-  const status = data.attributes.status;
+  const status = data.attributes?.status;
 
-  const { error } = await supabaseAdmin
+  if (!subscriptionId) {
+    console.error('❌ Missing subscription_id in subscription_updated');
+    return;
+  }
+
+  const updateData: any = {
+    status: status === 'active' ? 'active' : status === 'cancelled' ? 'cancelled' : 'past_due',
+  };
+
+  if (data.attributes?.renews_at) {
+    updateData.current_period_end = new Date(data.attributes.renews_at).toISOString();
+  }
+
+  console.log('💾 Updating subscription:', subscriptionId, 'with data:', JSON.stringify(updateData, null, 2));
+
+  const { data: updatedData, error } = await supabaseAdmin
     .from('subscriptions')
-    .update({
-      status: status === 'active' ? 'active' : status === 'cancelled' ? 'cancelled' : 'past_due',
-      current_period_end: data.attributes.renews_at ? new Date(data.attributes.renews_at).toISOString() : undefined,
-    })
-    .eq('lemonsqueezy_subscription_id', subscriptionId);
+    .update(updateData)
+    .eq('lemonsqueezy_subscription_id', subscriptionId)
+    .select();
 
   if (error) {
     console.error('❌ Error updating subscription:', error);
+    console.error('❌ Error details:', JSON.stringify(error, null, 2));
   } else {
     console.log('✅ Subscription updated:', subscriptionId);
+    console.log('✅ Updated data:', JSON.stringify(updatedData, null, 2));
+    if (!updatedData || updatedData.length === 0) {
+      console.warn('⚠️ No subscription found with ID:', subscriptionId);
+    }
   }
 }
 
@@ -241,23 +304,51 @@ async function handleSubscriptionExpired(data: any) {
 
 async function handleSubscriptionPaymentSuccess(data: any) {
   console.log('💰 Processing subscription_payment_success');
+  console.log('💰 Payment success data:', JSON.stringify(data, null, 2));
 
-  const subscriptionId = data.attributes.subscription_id;
+  // Try multiple paths for subscription_id
+  const subscriptionId = 
+    data.attributes?.subscription_id ||
+    data.id ||
+    data.relationships?.subscription?.data?.id;
+
+  if (!subscriptionId) {
+    console.error('❌ Missing subscription_id in subscription_payment_success');
+    console.error('❌ Available paths:', {
+      'data.attributes.subscription_id': data.attributes?.subscription_id,
+      'data.id': data.id,
+      'data.relationships': data.relationships,
+    });
+    return;
+  }
+
+  const updateData: any = {
+    stories_used: 0,
+    current_period_start: new Date().toISOString(),
+    status: 'active',
+  };
+
+  if (data.attributes?.renews_at) {
+    updateData.current_period_end = new Date(data.attributes.renews_at).toISOString();
+  }
+
+  console.log('💾 Resetting subscription usage for:', subscriptionId, 'with data:', JSON.stringify(updateData, null, 2));
 
   // Reset story usage for new period
-  const { error } = await supabaseAdmin
+  const { data: updatedData, error } = await supabaseAdmin
     .from('subscriptions')
-    .update({
-      stories_used: 0,
-      current_period_start: new Date().toISOString(),
-      current_period_end: data.attributes.renews_at ? new Date(data.attributes.renews_at).toISOString() : undefined,
-      status: 'active',
-    })
-    .eq('lemonsqueezy_subscription_id', subscriptionId);
+    .update(updateData)
+    .eq('lemonsqueezy_subscription_id', subscriptionId)
+    .select();
 
   if (error) {
     console.error('❌ Error resetting subscription usage:', error);
+    console.error('❌ Error details:', JSON.stringify(error, null, 2));
   } else {
     console.log('✅ Subscription renewed, usage reset:', subscriptionId);
+    console.log('✅ Updated data:', JSON.stringify(updatedData, null, 2));
+    if (!updatedData || updatedData.length === 0) {
+      console.warn('⚠️ No subscription found with ID:', subscriptionId);
+    }
   }
 }
