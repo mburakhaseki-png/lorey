@@ -98,15 +98,14 @@ export default function StoryDetailPage() {
             });
             
             if (user && storyId) {
-              try {
-                await supabase
-                  .from('stories')
-                  .update({ story_data: currentStoryData })
-                  .eq('id', storyId)
-                  .eq('user_id', user.id);
-              } catch (err: any) {
-                console.error('Error updating story:', err);
-              }
+              supabase
+                .from('stories')
+                .update({ story_data: currentStoryData })
+                .eq('id', storyId)
+                .eq('user_id', user.id)
+                .then(({ error }) => {
+                  if (error) console.error('Error updating story:', error);
+                });
             }
             
             imageGenerated = true;

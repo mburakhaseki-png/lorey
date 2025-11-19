@@ -98,7 +98,9 @@ export default function StoryPage() {
                 .from('stories')
                 .update({ story_data: currentStoryData })
                 .eq('id', storyId)
-                .catch((err: any) => console.error('Error updating story:', err));
+                .then(({ error }) => {
+                  if (error) console.error('Error updating story:', error);
+                });
             }
             
             imageGenerated = true;
