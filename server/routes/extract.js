@@ -76,7 +76,19 @@ router.post('/file', upload.single('file'), async (req, res) => {
     // Clean and format text
     text = cleanText(text);
 
-    res.json({ text });
+    // Check word count limit (15,000 words)
+    const wordCount = countWords(text);
+    const MAX_WORDS = 15000;
+    
+    if (wordCount > MAX_WORDS) {
+      return res.status(400).json({ 
+        error: `Dosya çok uzun. Maksimum 15.000 kelime kabul edilir. Dosyanızda ${wordCount.toLocaleString('tr-TR')} kelime var.`,
+        wordCount,
+        maxWords: MAX_WORDS
+      });
+    }
+
+    res.json({ text, wordCount });
   } catch (error) {
     console.error('File extraction error:', error);
     res.status(500).json({ error: 'Failed to extract text from file', message: error.message });
@@ -119,7 +131,19 @@ router.post('/url', async (req, res) => {
     // Clean and format text
     text = cleanText(text);
 
-    res.json({ text });
+    // Check word count limit (15,000 words)
+    const wordCount = countWords(text);
+    const MAX_WORDS = 15000;
+    
+    if (wordCount > MAX_WORDS) {
+      return res.status(400).json({ 
+        error: `İçerik çok uzun. Maksimum 15.000 kelime kabul edilir. İçerikte ${wordCount.toLocaleString('tr-TR')} kelime var.`,
+        wordCount,
+        maxWords: MAX_WORDS
+      });
+    }
+
+    res.json({ text, wordCount });
   } catch (error) {
     console.error('URL extraction error:', error);
     res.status(500).json({ error: 'Failed to extract text from URL', message: error.message });
@@ -150,7 +174,19 @@ router.post('/youtube', async (req, res) => {
     // Clean and format text
     const cleanedText = cleanText(text);
 
-    res.json({ text: cleanedText });
+    // Check word count limit (15,000 words)
+    const wordCount = countWords(cleanedText);
+    const MAX_WORDS = 15000;
+    
+    if (wordCount > MAX_WORDS) {
+      return res.status(400).json({ 
+        error: `Transkript çok uzun. Maksimum 15.000 kelime kabul edilir. Transkriptte ${wordCount.toLocaleString('tr-TR')} kelime var.`,
+        wordCount,
+        maxWords: MAX_WORDS
+      });
+    }
+
+    res.json({ text: cleanedText, wordCount });
   } catch (error) {
     console.error('YouTube extraction error:', error);
     res.status(500).json({
@@ -165,6 +201,14 @@ function extractYouTubeId(url) {
   const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
   const match = url.match(regex);
   return match ? match[1] : null;
+}
+
+// Helper function to count words in text
+function countWords(text) {
+  if (!text || text.trim().length === 0) {
+    return 0;
+  }
+  return text.trim().split(/\s+/).filter(word => word.length > 0).length;
 }
 
 // Helper function to clean and format text

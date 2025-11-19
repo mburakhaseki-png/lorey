@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useDropzone } from 'react-dropzone';
 import axios from 'axios';
-import { validateLessonText } from '@/utils/parseLesson';
+import { validateLessonText, countWords } from '@/utils/parseLesson';
 import { FullPageLoader } from '@/components/Loader';
 import Header from '@/components/Header';
 import AuthModal from '@/components/AuthModal';
@@ -148,6 +148,16 @@ export default function HomePage() {
           throw new Error('Failed to extract text from source');
         }
         setExtractedText(lessonText);
+      }
+
+      // Check word count limit (15,000 words)
+      const wordCount = countWords(lessonText);
+      const MAX_WORDS = 15000;
+      
+      if (wordCount > MAX_WORDS) {
+        setError(`Dosya çok uzun. Maksimum 15.000 kelime kabul edilir. Dosyanızda ${wordCount.toLocaleString('tr-TR')} kelime var.`);
+        setIsLoading(false);
+        return;
       }
 
       const validation = validateLessonText(lessonText);

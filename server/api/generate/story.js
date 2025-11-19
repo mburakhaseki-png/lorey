@@ -476,20 +476,50 @@ CRITICAL RULES FOR IMAGE PROMPTS:
 - Pattern MUST be: Index 0=IMAGE, 1=null, 2=null, 3=IMAGE, 4=null, 5=null, 6=IMAGE, 7=null, 8=null, 9=IMAGE...
 - DO NOT SKIP indices 3, 6, 9, 12, 15, 18... - they ALL need imagePrompts!
 - If you generate 14 paragraphs, you MUST have imagePrompts at indices [0, 3, 6, 9, 12] = 5 images
-- Describe characters in EXTREME DETAIL with their iconic physical features, clothing, and accessories
-- Examples:
-  * Rick and Morty universe: "Rick Sanchez, tall elderly man with wild gray spiky hair, white lab coat stained with unknown substances, blue pants, black shoes, brown belt, holding his portal gun"
-  * Harry Potter universe: "Harry Potter, teenage boy with messy black hair, round glasses, lightning bolt scar on forehead, Gryffindor red and gold robes, holding wooden wand"
-  * Regular Show universe: "Mordecai, tall blue jay bird with blue feathers, white chest, black tail feathers, wearing white shirt"
+
+CHARACTER DESCRIPTION (MANDATORY - EXTREME DETAIL):
+- ⚠️ CRITICAL: In EVERY imagePrompt, describe main characters in COMPLETE DETAIL:
+  * FACE: Eye color, eye shape, facial hair, skin tone, facial expression, distinctive features (scars, marks, etc.)
+  * HAIR: Color, style, length, texture (e.g., "messy black hair", "wild gray spiky hair", "long blonde braided hair")
+  * CLOTHING: Complete outfit description - shirt/jacket color and style, pants/skirt color and style, shoes, accessories
+  * BODY TYPE: Height, build (if relevant to character recognition)
+  * ACCESSORIES: Glasses, jewelry, weapons, tools, signature items
+- Examples of COMPLETE character descriptions:
+  * Rick and Morty: "Rick Sanchez, tall elderly man with wild gray spiky hair, blue eyes, wrinkled face, white lab coat stained with unknown substances, blue pants, black shoes, brown belt, holding his portal gun"
+  * Harry Potter: "Harry Potter, teenage boy with messy black hair, bright green eyes, round glasses, lightning bolt scar on forehead, pale skin, Gryffindor red and gold robes, black pants, holding wooden wand"
+  * Regular Show: "Mordecai, tall blue jay bird with bright blue feathers on head and body, white chest feathers, black tail feathers, orange beak, wearing white button-up shirt, blue jeans"
+- ⚠️ IMPORTANT: Always describe the MAIN character(s) first, then the scene
+
+SCENE COMPLEXITY RULES (MANDATORY):
+- ⚠️ AVOID COMPLEX SCENES: Keep scenes SIMPLE and FOCUSED
+  * Focus on 1-2 main characters maximum
+  * Avoid crowded scenes with many characters
+  * Avoid complex multi-layered backgrounds
+  * Avoid scenes with too many objects or details competing for attention
+- ⚠️ CHARACTER COUNT LIMIT:
+  * MAXIMUM 2 characters per scene
+  * If story involves multiple characters, focus on the main protagonist(s)
+  * Background characters should be minimal or blurred
+- ⚠️ SCENE SIMPLICITY:
+  * Choose clear, single-focus moments from the story
+  * Avoid busy action scenes with multiple things happening
+  * Prefer character-focused moments over complex action sequences
+  * Simple backgrounds that don't distract from characters
+
+ART STYLE (MANDATORY):
 - ALWAYS specify the art style matching the universe:
   * Rick and Morty: "2D animated art style from Rick and Morty show"
   * Harry Potter: "Realistic cinematic style, live-action movie quality"
   * Regular Show: "2D cartoon animation style from Regular Show"
   * Avatar The Last Airbender: "2D animated art style from Avatar series"
   * Star Wars: "Realistic sci-fi cinematic style"
+- Always end with: "high quality, detailed, [art style of universe]"
+
+SCENE COMPOSITION:
 - Make scenes FUN, DYNAMIC, and directly related to the story moment
 - Include environment details, lighting, mood, and action
-- Always end with: "high quality, detailed, [art style of universe]"`;
+- Focus on character expressions and body language
+- Keep composition simple: main character(s) in foreground, simple background`;
 
     const userPrompt = `You are creating an episode of ${universe} that teaches this content:
 
