@@ -333,7 +333,7 @@ export default function StoryPage() {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleScroll);
     };
-  }, [storyData, activeImageIndex]);
+  }, [storyData]);
 
   const handleQuizRegenerate = (index: number) => (newQuiz: QuizType) => {
     setStoryData((prevData) => {

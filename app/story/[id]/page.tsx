@@ -340,7 +340,7 @@ export default function StoryDetailPage() {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleScroll);
     };
-  }, [storyData, activeImageIndex]);
+  }, [storyData]);
 
   // Get current active image URL - activeImageIndex is already the image index (0, 3, 6, 9...)
   const safeImageIndex = storyData && activeImageIndex < storyData.story.length ? activeImageIndex : (storyData ? 0 : -1);
