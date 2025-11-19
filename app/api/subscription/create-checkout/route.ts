@@ -60,6 +60,7 @@ export async function POST(request: NextRequest) {
     console.log('🔗 Redirect URL:', redirectUrl);
 
     // Create checkout session with Lemon Squeezy
+    // Note: redirect_url is set in checkout_data, not checkout_options
     const checkoutPayload = {
       data: {
         type: 'checkouts',
@@ -69,8 +70,6 @@ export async function POST(request: NextRequest) {
             custom: {
               user_id: user.id,
             },
-          },
-          checkout_options: {
             redirect_url: redirectUrl,
           },
         },
