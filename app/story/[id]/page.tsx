@@ -131,10 +131,10 @@ export default function StoryDetailPage() {
           if (response.data?.imageUrl && response.data.imageUrl !== '') {
             const newImageUrl = response.data.imageUrl;
             
-            // Update local copy of story data
+            // Update local copy first
             currentStoryData.story[i] = { ...currentStoryData.story[i], imageUrl: newImageUrl };
             
-            // Update state using functional update to ensure we have the latest state
+            // Update state using functional update
             setStoryData((prevData) => {
               if (!prevData) return prevData;
               const updatedStory = { ...prevData };
@@ -143,7 +143,7 @@ export default function StoryDetailPage() {
               return updatedStory;
             });
             
-            // Update in Supabase - await to ensure it's saved before continuing
+            // Update in Supabase - use currentStoryData which is always up to date
             if (user && storyId) {
               try {
                 const { error } = await supabase
@@ -156,7 +156,7 @@ export default function StoryDetailPage() {
                 
                 if (error) {
                   console.error('❌ Error updating story in database:', error);
-                  throw error;
+                  // Don't throw - continue with other images even if one fails to save
                 } else {
                   console.log(`✅ Story updated in database for paragraph ${i} with imageUrl: ${newImageUrl.substring(0, 50)}...`);
                 }
@@ -348,6 +348,14 @@ export default function StoryDetailPage() {
   const safeImageIndex = activeImageIndex < storyData.story.length ? activeImageIndex : 0;
   const currentImageUrl = storyData.story[safeImageIndex]?.imageUrl || null;
   const currentImagePrompt = storyData.story[safeImageIndex]?.imagePrompt || null;
+  
+  // Debug: Log current image status
+  useEffect(() => {
+    if (storyData && safeImageIndex < storyData.story.length) {
+      const paragraph = storyData.story[safeImageIndex];
+      console.log(`🖼️ Current image status - Index: ${safeImageIndex}, Has URL: ${!!paragraph?.imageUrl}, URL: ${paragraph?.imageUrl?.substring(0, 50) || 'null'}...`);
+    }
+  }, [safeImageIndex, storyData]);
 
   return (
     <>
