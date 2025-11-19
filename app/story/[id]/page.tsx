@@ -241,51 +241,40 @@ export default function StoryDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, storyId, router, supabase]);
 
-  // Update active image based on scroll position (throttled for better performance)
+  // Update active image based on scroll position using Intersection Observer
   useEffect(() => {
     if (!storyData) return;
 
-    let ticking = false;
-
-    const handleScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          if (!storyContentRef.current) {
-            ticking = false;
-            return;
-          }
-
-          const paragraphs = storyContentRef.current.querySelectorAll('[data-paragraph-index]');
-          const scrollPosition = window.scrollY + window.innerHeight / 2;
-
-          for (let i = 0; i < paragraphs.length; i++) {
-            const element = paragraphs[i] as HTMLElement;
-            const rect = element.getBoundingClientRect();
-            const elementTop = rect.top + window.scrollY;
-            const elementBottom = elementTop + rect.height;
-
-            if (scrollPosition >= elementTop && scrollPosition < elementBottom) {
-              const paragraphIndex = parseInt(element.getAttribute('data-paragraph-index') || '0');
-              const imageIndex = Math.floor(paragraphIndex / 3) * 3;
-              
-              if (imageIndex < storyData.story.length && imageIndex !== activeImageIndex) {
-                setActiveImageIndex(imageIndex);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const index = parseInt(entry.target.getAttribute('data-paragraph-index') || '0');
+            const imageIndex = Math.floor(index / 3) * 3;
+            
+            // Only update if changed
+            setActiveImageIndex((prev) => {
+              if (prev !== imageIndex) {
+                return imageIndex;
               }
-              ticking = false;
-              return;
-            }
+              return prev;
+            });
           }
-          ticking = false;
         });
-        ticking = true;
+      },
+      {
+        // Trigger when element is in the middle of the viewport
+        rootMargin: '-40% 0px -40% 0px',
+        threshold: 0
       }
-    };
+    );
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll(); // Initial call
+    // Observe all paragraph sections
+    const paragraphs = document.querySelectorAll('[data-paragraph-index]');
+    paragraphs.forEach((p) => observer.observe(p));
 
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [storyData, activeImageIndex]);
+    return () => observer.disconnect();
+  }, [storyData]);
 
   if (isLoading) {
     return <FullPageLoader message="Loading your episode..." showSnake={false} />;
