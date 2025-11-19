@@ -20,7 +20,16 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git push)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(timeout /t 5)",
+      "Bash(timeout /t 3)",
+      "Bash(timeout /t 8)",
+      "Bash(set PORT=3002)",
+      "Bash(set SERVER_PORT=3003)",
+      "Bash(powershell -Command:*)",
+      "Bash(timeout /t 2)",
+      "Bash(curl:*)",
+      "Bash(del nul 2)"
     ],
     "deny": [],
     "ask": []

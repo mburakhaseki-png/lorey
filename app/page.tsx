@@ -54,6 +54,7 @@ export default function HomePage() {
   const [currentQuote, setCurrentQuote] = useState(0);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signup');
+  const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
 
   // Simplified animation props for mobile - no animations on mobile
   const mobileAnimationProps = {
@@ -269,6 +270,10 @@ export default function HomePage() {
 
   if (isLoading) {
     return <FullPageLoader message="Creating your episode..." showSnake={true} />;
+  }
+
+  if (isCheckoutLoading) {
+    return <FullPageLoader message="Redirecting to checkout..." showSnake={false} />;
   }
 
   return (
@@ -684,7 +689,7 @@ export default function HomePage() {
                   viewport: { once: true },
                   transition: { delay: isMobile ? 0 : index * 0.1 }
                 })}
-                className={`relative p-8 rounded-3xl backdrop-blur-xl ${
+                className={`relative p-8 rounded-3xl backdrop-blur-xl flex flex-col ${
                   plan.highlighted
                     ? 'bg-gradient-to-b from-red-600/20 to-red-900/10 border-2 border-red-600/50 shadow-[0_0_50px_rgba(220,38,38,0.3)]'
                     : 'bg-white/5 border border-white/10'
@@ -695,7 +700,7 @@ export default function HomePage() {
                     Most Popular
                   </div>
                 )}
-                <div className="space-y-6">
+                <div className="flex-1 space-y-6">
                   <div>
                     <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
                     <p className="text-white/60 text-sm">{plan.description}</p>
@@ -704,7 +709,7 @@ export default function HomePage() {
                     <span className="text-5xl font-bold text-white">${plan.price}</span>
                     <span className="text-white/50 text-sm">/month</span>
                   </div>
-                  <ul className="space-y-3">
+                  <ul className="space-y-3 pb-6">
                     {plan.features.map((feature) => (
                       <li key={feature} className="flex items-start gap-3 text-white/80 text-sm">
                         <svg className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -714,7 +719,8 @@ export default function HomePage() {
                       </li>
                     ))}
                   </ul>
-                  <motion.button
+                </div>
+                <motion.button
                     whileHover={isMobile ? {} : { scale: 1.02 }}
                     whileTap={isMobile ? {} : { scale: 0.98 }}
                     onClick={async () => {
@@ -723,7 +729,7 @@ export default function HomePage() {
                         setAuthModalOpen(true);
                       } else {
                         try {
-                          setIsLoading(true);
+                          setIsCheckoutLoading(true);
                           const response = await fetch('/api/subscription/create-checkout', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -736,12 +742,12 @@ export default function HomePage() {
                             window.location.href = data.checkoutUrl;
                           } else {
                             setError(data.error || 'Failed to create checkout session');
-                            setIsLoading(false);
+                            setIsCheckoutLoading(false);
                           }
                         } catch (err) {
                           console.error('Checkout error:', err);
                           setError('Failed to start checkout. Please try again.');
-                          setIsLoading(false);
+                          setIsCheckoutLoading(false);
                         }
                       }
                     }}
@@ -753,7 +759,6 @@ export default function HomePage() {
                   >
                     Get Started
                   </motion.button>
-                </div>
               </motion.div>
             ))}
           </div>

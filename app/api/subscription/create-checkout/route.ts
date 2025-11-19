@@ -37,6 +37,13 @@ export async function POST(request: NextRequest) {
 
     const variantId = PRODUCT_VARIANTS[planName];
 
+    console.log('🔍 Checkout Request:', {
+      planName,
+      variantId,
+      storeId: LEMONSQUEEZY_STORE_ID,
+      allVariants: PRODUCT_VARIANTS
+    });
+
     if (!LEMONSQUEEZY_API_KEY) {
       return NextResponse.json(
         { error: 'Lemon Squeezy API key not configured' },
