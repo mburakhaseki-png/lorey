@@ -17,7 +17,10 @@
       "Bash(nul)",
       "Bash(dir:*)",
       "Bash(app/page.tsx)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []

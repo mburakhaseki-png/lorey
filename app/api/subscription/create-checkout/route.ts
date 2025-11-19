@@ -13,7 +13,7 @@ const PRODUCT_VARIANTS: Record<string, string> = {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
 
     // Check if user is authenticated
     const { data: { user }, error: authError } = await supabase.auth.getUser();
