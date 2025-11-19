@@ -65,9 +65,16 @@ export default function StoryDetailPage() {
     const paragraphsNeedingImages = initialData.story.filter((p, idx) => {
       if (idx % 3 !== 0) return false;
       if (!p.imagePrompt || p.imagePrompt === null) return false;
-      // Check if imageUrl is missing or empty
-      const hasImageUrl = p.imageUrl && p.imageUrl !== '' && p.imageUrl !== null && p.imageUrl !== undefined;
-      return !hasImageUrl;
+      
+      // Strict check: imageUrl must exist, be a non-empty string, and not be null/undefined
+      const imageUrl = p.imageUrl;
+      const hasValidImageUrl = imageUrl && 
+                              typeof imageUrl === 'string' && 
+                              imageUrl.trim() !== '' && 
+                              imageUrl !== 'null' && 
+                              imageUrl !== 'undefined';
+      
+      return !hasValidImageUrl;
     });
 
     if (paragraphsNeedingImages.length === 0) {
@@ -85,10 +92,20 @@ export default function StoryDetailPage() {
     for (let i = 0; i < initialData.story.length; i += 3) {
       const paragraph = initialData.story[i];
 
-      // Skip if no imagePrompt or if imageUrl already exists
-      const hasImageUrl = paragraph.imageUrl && paragraph.imageUrl !== '' && paragraph.imageUrl !== null && paragraph.imageUrl !== undefined;
-      if (!paragraph.imagePrompt || paragraph.imagePrompt === null || hasImageUrl) {
-        console.log(`⏭️ Skipping paragraph ${i} - ${hasImageUrl ? 'image already exists' : 'no imagePrompt'}`);
+      // Skip if no imagePrompt or if imageUrl already exists (strict check)
+      const imageUrl = paragraph.imageUrl;
+      const hasValidImageUrl = imageUrl && 
+                              typeof imageUrl === 'string' && 
+                              imageUrl.trim() !== '' && 
+                              imageUrl !== 'null' && 
+                              imageUrl !== 'undefined';
+      
+      if (!paragraph.imagePrompt || paragraph.imagePrompt === null || hasValidImageUrl) {
+        console.log(`⏭️ Skipping paragraph ${i} - ${hasValidImageUrl ? 'image already exists' : 'no imagePrompt'}`, {
+          hasPrompt: !!paragraph.imagePrompt,
+          imageUrl: imageUrl?.substring(0, 50) + '...',
+          hasValidImageUrl
+        });
         continue;
       }
 
@@ -194,39 +211,58 @@ export default function StoryDetailPage() {
 
         const loadedStoryData = data.story_data as StoryData;
         
-        // Debug: Log image status
+        // Debug: Log image status with more detail
         const imageStatus = loadedStoryData.story
           .map((p: any, idx: number) => ({
             index: idx,
             hasPrompt: !!p.imagePrompt,
-            hasImageUrl: !!(p.imageUrl && p.imageUrl !== ''),
-            imageUrl: p.imageUrl || 'MISSING'
+            imageUrl: p.imageUrl,
+            imageUrlType: typeof p.imageUrl,
+            imageUrlLength: p.imageUrl ? String(p.imageUrl).length : 0,
+            isEmpty: !p.imageUrl || p.imageUrl === '' || p.imageUrl === null || p.imageUrl === undefined,
+            needsGeneration: idx % 3 === 0 && !!p.imagePrompt && (!p.imageUrl || p.imageUrl === '' || p.imageUrl === null || p.imageUrl === undefined)
           }))
           .filter((item: any) => item.index % 3 === 0);
         console.log('📊 Image status from database:', imageStatus);
         
-        setStoryData(loadedStoryData);
-        setUniverse(data.universe);
-        setIsLoading(false);
-
-        // Check if images need to be generated
-        // Only generate if imagePrompt exists AND imageUrl is truly missing (null, undefined, or empty string)
+        // More strict check: only generate if imageUrl is truly missing
         const needsImageGeneration = loadedStoryData.story.some(
           (p: any, idx: number) => {
             if (idx % 3 !== 0) return false;
             if (!p.imagePrompt || p.imagePrompt === null) return false;
-            // Check if imageUrl is missing or empty
-            const hasImageUrl = p.imageUrl && p.imageUrl !== '' && p.imageUrl !== null && p.imageUrl !== undefined;
-            return !hasImageUrl;
+            
+            // Strict check: imageUrl must exist, be a non-empty string, and not be null/undefined
+            const imageUrl = p.imageUrl;
+            const hasValidImageUrl = imageUrl && 
+                                    typeof imageUrl === 'string' && 
+                                    imageUrl.trim() !== '' && 
+                                    imageUrl !== 'null' && 
+                                    imageUrl !== 'undefined';
+            
+            if (!hasValidImageUrl) {
+              console.log(`⚠️ Paragraph ${idx} needs image generation:`, {
+                hasPrompt: !!p.imagePrompt,
+                imageUrl: imageUrl,
+                imageUrlType: typeof imageUrl,
+                isEmpty: !imageUrl || imageUrl === '',
+              });
+            }
+            
+            return !hasValidImageUrl;
           }
         );
 
+        setStoryData(loadedStoryData);
+        setUniverse(data.universe);
+        setIsLoading(false);
+
+        // Don't generate images when viewing from My Stories - only show existing ones
         if (needsImageGeneration) {
-          console.log('🖼️ Some images are missing, generating them...');
-          // Use the loaded data directly, don't pass through state
-          generateImages(loadedStoryData, data.universe);
+          console.log('⏭️ Some images are missing, but skipping generation (viewing from My Stories)');
+          console.log('📊 Missing images:', imageStatus.filter((item: any) => item.needsGeneration).map((item: any) => item.index));
         } else {
           console.log('✅ All images are already generated and saved - no regeneration needed');
+          console.log('✅ Image URLs:', imageStatus.map((item: any) => ({ index: item.index, url: item.imageUrl?.substring(0, 50) + '...' })));
         }
       } catch (err: any) {
         console.error('Error loading story:', err);
