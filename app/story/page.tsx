@@ -153,11 +153,31 @@ export default function StoryPage() {
 
   // Update active image based on scroll position
   useEffect(() => {
-    if (!storyData || !storyContentRef.current) return;
+    if (!storyData) {
+      console.log('⚠️ Scroll listener: storyData is null');
+      return;
+    }
+    
+    if (!storyContentRef.current) {
+      console.log('⚠️ Scroll listener: storyContentRef.current is null');
+      return;
+    }
+
+    console.log('✅ Scroll listener: Setting up...');
 
     const updateActiveImage = () => {
-      const paragraphs = storyContentRef.current?.querySelectorAll('[data-paragraph-index]');
-      if (!paragraphs || paragraphs.length === 0) return;
+      if (!storyContentRef.current) {
+        console.log('⚠️ updateActiveImage: storyContentRef.current is null');
+        return;
+      }
+
+      const paragraphs = storyContentRef.current.querySelectorAll('[data-paragraph-index]');
+      console.log(`📊 Found ${paragraphs.length} paragraphs in updateActiveImage`);
+      
+      if (paragraphs.length === 0) {
+        console.log('⚠️ No paragraphs found');
+        return;
+      }
 
       const viewportCenter = window.innerHeight / 2;
       let closestIndex = 0;
@@ -178,9 +198,11 @@ export default function StoryPage() {
       // Calculate image index: paragraphs 0,1,2 → image 0, paragraphs 3,4,5 → image 3, etc.
       const imageIndex = Math.floor(closestIndex / 3) * 3;
 
+      console.log(`🖼️ Scroll update: Paragraph ${closestIndex} → Image ${imageIndex}, current activeImageIndex: ${activeImageIndex}`);
+
       setActiveImageIndex((prev) => {
         if (prev !== imageIndex) {
-          console.log(`🖼️ Scroll: Paragraph ${closestIndex} → Image ${imageIndex}`);
+          console.log(`✅ Changing image from index ${prev} to ${imageIndex}`);
           return imageIndex;
         }
         return prev;
@@ -188,16 +210,22 @@ export default function StoryPage() {
     };
 
     // Initial update
-    const timeoutId = setTimeout(updateActiveImage, 100);
+    console.log('⏰ Setting initial image update timeout...');
+    const timeoutId = setTimeout(() => {
+      console.log('⏰ Initial image update timeout fired');
+      updateActiveImage();
+    }, 500);
 
     // Scroll listener
     const handleScroll = () => {
       updateActiveImage();
     };
 
+    console.log('📌 Adding scroll event listener...');
     window.addEventListener('scroll', handleScroll, { passive: true });
 
     return () => {
+      console.log('🧹 Cleaning up scroll listener...');
       clearTimeout(timeoutId);
       window.removeEventListener('scroll', handleScroll);
     };
@@ -248,6 +276,18 @@ export default function StoryPage() {
   const safeImageIndex = activeImageIndex < storyData.story.length ? activeImageIndex : 0;
   const currentImageUrl = storyData.story[safeImageIndex]?.imageUrl || null;
   const currentImagePrompt = storyData.story[safeImageIndex]?.imagePrompt || null;
+  
+  // Debug: Log current image status
+  useEffect(() => {
+    console.log(`🖼️ RENDER: activeImageIndex=${activeImageIndex}, safeImageIndex=${safeImageIndex}`);
+    console.log(`🖼️ Current image URL: ${currentImageUrl ? currentImageUrl.substring(0, 50) + '...' : 'null'}`);
+    
+    // Log all images
+    const allImages = storyData.story
+      .map((p: any, idx: number) => ({ index: idx, hasUrl: !!p.imageUrl, url: p.imageUrl?.substring(0, 30) || 'null' }))
+      .filter((item: any) => item.index % 3 === 0);
+    console.log('📸 All images in storyData:', allImages);
+  }, [activeImageIndex, safeImageIndex, currentImageUrl, storyData]);
 
   return (
     <>
