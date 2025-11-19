@@ -288,7 +288,7 @@ export default function StoryDetailPage() {
           if (mostVisible) {
             setActiveImageIndex((prev) => {
               if (prev !== mostVisible!.index) {
-                console.log(`🖼️ Active image changed to index ${mostVisible!.index}`);
+                console.log(`🖼️ Active image changed to index ${mostVisible!.index} (paragraph ${mostVisible!.index})`);
                 return mostVisible!.index;
               }
               return prev;
@@ -296,7 +296,7 @@ export default function StoryDetailPage() {
           }
         },
         {
-          root: null, // Use viewport
+          root: storyContentRef.current, // Use story content container as root
           // Trigger when element is in the middle 40% of viewport
           rootMargin: '-30% 0px -30% 0px',
           threshold: [0, 0.1, 0.25, 0.5, 0.75, 1]
@@ -327,6 +327,19 @@ export default function StoryDetailPage() {
     };
   }, [storyData]);
 
+  // Get current active image URL - activeImageIndex is already the image index (0, 3, 6, 9...)
+  const safeImageIndex = storyData && activeImageIndex < storyData.story.length ? activeImageIndex : (storyData ? 0 : -1);
+  const currentImageUrl = storyData && safeImageIndex >= 0 ? storyData.story[safeImageIndex]?.imageUrl || null : null;
+  const currentImagePrompt = storyData && safeImageIndex >= 0 ? storyData.story[safeImageIndex]?.imagePrompt || null : null;
+  
+  // Debug: Log current image status
+  useEffect(() => {
+    if (storyData && safeImageIndex < storyData.story.length) {
+      const paragraph = storyData.story[safeImageIndex];
+      console.log(`🖼️ Current image status - Index: ${safeImageIndex}, Has URL: ${!!paragraph?.imageUrl}, URL: ${paragraph?.imageUrl?.substring(0, 50) || 'null'}...`);
+    }
+  }, [safeImageIndex, storyData]);
+
   if (isLoading) {
     return <FullPageLoader message="Loading your episode..." showSnake={false} />;
   }
@@ -343,19 +356,6 @@ export default function StoryDetailPage() {
       </div>
     );
   }
-
-  // Get current active image URL - activeImageIndex is already the image index (0, 3, 6, 9...)
-  const safeImageIndex = activeImageIndex < storyData.story.length ? activeImageIndex : 0;
-  const currentImageUrl = storyData.story[safeImageIndex]?.imageUrl || null;
-  const currentImagePrompt = storyData.story[safeImageIndex]?.imagePrompt || null;
-  
-  // Debug: Log current image status
-  useEffect(() => {
-    if (storyData && safeImageIndex < storyData.story.length) {
-      const paragraph = storyData.story[safeImageIndex];
-      console.log(`🖼️ Current image status - Index: ${safeImageIndex}, Has URL: ${!!paragraph?.imageUrl}, URL: ${paragraph?.imageUrl?.substring(0, 50) || 'null'}...`);
-    }
-  }, [safeImageIndex, storyData]);
 
   return (
     <>
@@ -431,7 +431,11 @@ export default function StoryDetailPage() {
                 className="relative w-full max-w-xl xl:max-w-2xl aspect-square rounded-[32px] border border-white/15 bg-black/30 flex items-center justify-center shadow-[0_25px_60px_rgba(0,0,0,0.35)]"
               >
                 <div className="text-center space-y-4">
-                  <div className="text-6xl mb-2">🖼️</div>
+                  <motion.div
+                    className="w-12 h-12 border-4 border-red-600/30 border-t-red-600 rounded-full mx-auto"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                  />
                   <p className="text-white/50 text-lg font-medium">Image Generating...</p>
                   <p className="text-white/30 text-sm">Episode {Math.floor(safeImageIndex / 3) + 1}</p>
                 </div>
