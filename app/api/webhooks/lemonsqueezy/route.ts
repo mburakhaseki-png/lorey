@@ -231,7 +231,17 @@ async function handleSubscriptionCreated(data: any) {
   const now = new Date();
   const endDate = new Date(data.attributes.renews_at || now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-  // Upsert subscription record
+  // First, check if subscription already exists for this user_id
+  const { data: existingSubscription, error: fetchError } = await supabaseAdmin
+    .from('subscriptions')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (fetchError && fetchError.code !== 'PGRST116') {
+    console.error('❌ Error fetching existing subscription:', fetchError);
+  }
+
   const subscriptionData = {
     user_id: userId,
     lemonsqueezy_subscription_id: subscriptionId,
@@ -241,21 +251,39 @@ async function handleSubscriptionCreated(data: any) {
     plan_name: planName,
     status: data.attributes?.status === 'active' ? 'active' : 'past_due',
     story_limit: plan.storyLimit,
-    stories_used: 0,
-    subscription_start_date: data.attributes?.created_at || now.toISOString(),
+    stories_used: existingSubscription?.stories_used || 0, // Preserve existing usage
+    subscription_start_date: data.attributes?.created_at || existingSubscription?.subscription_start_date || now.toISOString(),
     subscription_end_date: endDate.toISOString(),
     current_period_start: data.attributes?.renews_at ? new Date(data.attributes.renews_at).toISOString() : now.toISOString(),
     current_period_end: endDate.toISOString(),
   };
 
   console.log('💾 Upserting subscription with data:', JSON.stringify(subscriptionData, null, 2));
+  console.log('🔍 Existing subscription:', existingSubscription ? 'Found' : 'Not found');
 
-  const { data: upsertedData, error } = await supabaseAdmin
-    .from('subscriptions')
-    .upsert(subscriptionData, {
-      onConflict: 'lemonsqueezy_subscription_id'
-    })
-    .select();
+  let upsertedData;
+  let error;
+
+  if (existingSubscription) {
+    // Update existing subscription
+    console.log('🔄 Updating existing subscription with ID:', existingSubscription.id);
+    const result = await supabaseAdmin
+      .from('subscriptions')
+      .update(subscriptionData)
+      .eq('user_id', userId)
+      .select();
+    upsertedData = result.data;
+    error = result.error;
+  } else {
+    // Insert new subscription
+    console.log('➕ Inserting new subscription');
+    const result = await supabaseAdmin
+      .from('subscriptions')
+      .insert(subscriptionData)
+      .select();
+    upsertedData = result.data;
+    error = result.error;
+  }
 
   if (error) {
     console.error('❌ Error upserting subscription:', error);
@@ -288,11 +316,24 @@ async function handleSubscriptionUpdated(data: any) {
 
   console.log('💾 Updating subscription:', subscriptionId, 'with data:', JSON.stringify(updateData, null, 2));
 
-  const { data: updatedData, error } = await supabaseAdmin
+  // Try to find subscription by lemonsqueezy_subscription_id first
+  let { data: updatedData, error } = await supabaseAdmin
     .from('subscriptions')
     .update(updateData)
     .eq('lemonsqueezy_subscription_id', subscriptionId)
     .select();
+
+  // If not found, try to find by customer_id from the subscription data
+  if ((!updatedData || updatedData.length === 0) && data.attributes?.customer_id) {
+    console.log('⚠️ Subscription not found by subscription_id, trying customer_id:', data.attributes.customer_id);
+    const result = await supabaseAdmin
+      .from('subscriptions')
+      .update(updateData)
+      .eq('lemonsqueezy_customer_id', data.attributes.customer_id.toString())
+      .select();
+    updatedData = result.data;
+    error = result.error;
+  }
 
   if (error) {
     console.error('❌ Error updating subscription:', error);
@@ -376,12 +417,24 @@ async function handleSubscriptionPaymentSuccess(data: any) {
 
   console.log('💾 Resetting subscription usage for:', subscriptionId, 'with data:', JSON.stringify(updateData, null, 2));
 
-  // Reset story usage for new period
-  const { data: updatedData, error } = await supabaseAdmin
+  // Try to find subscription by lemonsqueezy_subscription_id first
+  let { data: updatedData, error } = await supabaseAdmin
     .from('subscriptions')
     .update(updateData)
     .eq('lemonsqueezy_subscription_id', subscriptionId)
     .select();
+
+  // If not found, try to find by customer_id from the payment data
+  if ((!updatedData || updatedData.length === 0) && data.attributes?.customer_id) {
+    console.log('⚠️ Subscription not found by subscription_id, trying customer_id:', data.attributes.customer_id);
+    const result = await supabaseAdmin
+      .from('subscriptions')
+      .update(updateData)
+      .eq('lemonsqueezy_customer_id', data.attributes.customer_id.toString())
+      .select();
+    updatedData = result.data;
+    error = result.error;
+  }
 
   if (error) {
     console.error('❌ Error resetting subscription usage:', error);
