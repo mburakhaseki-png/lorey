@@ -287,17 +287,13 @@ export default function StoryPage() {
   const currentImageUrl = storyData.story[safeImageIndex]?.imageUrl || null;
   const currentImagePrompt = storyData.story[safeImageIndex]?.imagePrompt || null;
   
-  // Debug: Log current image status
+  // Debug: Log current image status (only when image changes)
   useEffect(() => {
-    console.log(`🖼️ RENDER: activeImageIndex=${activeImageIndex}, safeImageIndex=${safeImageIndex}`);
-    console.log(`🖼️ Current image URL: ${currentImageUrl ? currentImageUrl.substring(0, 50) + '...' : 'null'}`);
-    
-    // Log all images
-    const allImages = storyData.story
-      .map((p: any, idx: number) => ({ index: idx, hasUrl: !!p.imageUrl, url: p.imageUrl?.substring(0, 30) || 'null' }))
-      .filter((item: any) => item.index % 3 === 0);
-    console.log('📸 All images in storyData:', allImages);
-  }, [activeImageIndex, safeImageIndex, currentImageUrl, storyData]);
+    if (storyData && safeImageIndex >= 0 && safeImageIndex < storyData.story.length) {
+      const paragraph = storyData.story[safeImageIndex];
+      console.log(`🖼️ Displaying image at index ${safeImageIndex}, Has URL: ${!!paragraph?.imageUrl}`);
+    }
+  }, [safeImageIndex, storyData]);
 
   return (
     <>
