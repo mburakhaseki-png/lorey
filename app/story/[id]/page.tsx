@@ -260,70 +260,63 @@ export default function StoryDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, storyId, router, supabase]);
 
-  // Update active image based on scroll position using Intersection Observer
+  // Update active image based on scroll position using scroll event listener
   useEffect(() => {
-    if (!storyData) return;
+    if (!storyData || !storyContentRef.current) return;
 
-    let observer: IntersectionObserver | null = null;
+    const updateActiveImage = () => {
+      const container = storyContentRef.current;
+      if (!container) return;
 
-    // Use a small delay to ensure DOM is ready
-    const timeoutId = setTimeout(() => {
-      observer = new IntersectionObserver(
-        (entries) => {
-          // Find the entry with the highest intersection ratio (most visible)
-          let mostVisible: { index: number; ratio: number } | null = null;
-          
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              const index = parseInt(entry.target.getAttribute('data-paragraph-index') || '0');
-              // Find the image index for this paragraph (images are at 0, 3, 6, 9...)
-              const imageIndex = Math.floor(index / 3) * 3;
-              
-              if (!mostVisible || entry.intersectionRatio > mostVisible.ratio) {
-                mostVisible = { index: imageIndex, ratio: entry.intersectionRatio };
-              }
-            }
-          });
+      const paragraphs = container.querySelectorAll('[data-paragraph-index]');
+      if (paragraphs.length === 0) return;
 
-          if (mostVisible) {
-            setActiveImageIndex((prev) => {
-              if (prev !== mostVisible!.index) {
-                console.log(`🖼️ Active image changed to index ${mostVisible!.index} (paragraph ${mostVisible!.index})`);
-                return mostVisible!.index;
-              }
-              return prev;
-            });
-          }
-        },
-        {
-          root: storyContentRef.current, // Use story content container as root
-          // Trigger when element is in the middle 40% of viewport
-          rootMargin: '-30% 0px -30% 0px',
-          threshold: [0, 0.1, 0.25, 0.5, 0.75, 1]
+      const viewportHeight = window.innerHeight;
+      const viewportCenter = window.scrollY + viewportHeight / 2;
+
+      let closestParagraph: { index: number; distance: number } | null = null;
+
+      paragraphs.forEach((paragraph) => {
+        const rect = paragraph.getBoundingClientRect();
+        const paragraphCenter = rect.top + rect.height / 2;
+        const distance = Math.abs(viewportCenter - paragraphCenter);
+
+        if (!closestParagraph || distance < closestParagraph.distance) {
+          const index = parseInt(paragraph.getAttribute('data-paragraph-index') || '0');
+          const imageIndex = Math.floor(index / 3) * 3;
+          closestParagraph = { index: imageIndex, distance };
         }
-      );
+      });
 
-      // Observe all paragraph sections
-      const paragraphs = document.querySelectorAll('[data-paragraph-index]');
-      console.log(`📊 Observing ${paragraphs.length} paragraphs`);
-      
-      if (paragraphs.length > 0) {
-        paragraphs.forEach((p) => observer!.observe(p));
-        
-        // Set initial active image
-        const firstParagraph = paragraphs[0];
-        const firstIndex = parseInt(firstParagraph.getAttribute('data-paragraph-index') || '0');
-        const firstImageIndex = Math.floor(firstIndex / 3) * 3;
-        console.log(`🖼️ Setting initial active image to index ${firstImageIndex}`);
-        setActiveImageIndex(firstImageIndex);
+      if (closestParagraph) {
+        setActiveImageIndex((prev) => {
+          if (prev !== closestParagraph!.index) {
+            console.log(`🖼️ Active image changed to index ${closestParagraph!.index}`);
+            return closestParagraph!.index;
+          }
+          return prev;
+        });
       }
+    };
+
+    // Set initial active image
+    const timeoutId = setTimeout(() => {
+      const paragraphs = storyContentRef.current?.querySelectorAll('[data-paragraph-index]');
+      if (paragraphs && paragraphs.length > 0) {
+        const firstIndex = parseInt(paragraphs[0].getAttribute('data-paragraph-index') || '0');
+        const firstImageIndex = Math.floor(firstIndex / 3) * 3;
+        setActiveImageIndex(firstImageIndex);
+        console.log(`🖼️ Setting initial active image to index ${firstImageIndex}`);
+      }
+      updateActiveImage();
     }, 200);
+
+    // Add scroll listener to window
+    window.addEventListener('scroll', updateActiveImage, { passive: true });
 
     return () => {
       clearTimeout(timeoutId);
-      if (observer) {
-        observer.disconnect();
-      }
+      window.removeEventListener('scroll', updateActiveImage);
     };
   }, [storyData]);
 
