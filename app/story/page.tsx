@@ -122,17 +122,11 @@ export default function StoryPage() {
     setIsGeneratingImages(true);
 
     let generatedCount = 0;
-    // Keep track of updated story data as we generate images
-    let currentStoryData = { ...data };
-    currentStoryData.story = [...data.story];
 
     for (let i = 0; i < data.story.length; i += 3) {
       const paragraph = data.story[i];
 
-      // Skip if no imagePrompt or if imageUrl already exists
-      const hasImageUrl = paragraph.imageUrl && paragraph.imageUrl !== '' && paragraph.imageUrl !== null && paragraph.imageUrl !== undefined;
-      if (!paragraph.imagePrompt || paragraph.imagePrompt === null || hasImageUrl) {
-        console.log(`⏭️ Skipping paragraph ${i} - ${hasImageUrl ? 'image already exists' : 'no imagePrompt'}`);
+      if (!paragraph.imagePrompt || paragraph.imagePrompt === null || paragraph.imageUrl) {
         continue;
       }
 
@@ -162,45 +156,27 @@ export default function StoryPage() {
             universe: universeContext,
           });
 
-          if (response.data?.imageUrl && response.data.imageUrl !== '') {
-            const newImageUrl = response.data.imageUrl;
-            
-            // Update local copy of story data
-            currentStoryData.story[i] = { ...currentStoryData.story[i], imageUrl: newImageUrl };
-            
-            // Update state using functional update to ensure we have the latest state
-            setStoryData((prevData) => {
-              if (!prevData) return prevData;
-              const updatedStory = { ...prevData };
-              updatedStory.story = [...updatedStory.story];
-              updatedStory.story[i] = { ...updatedStory.story[i], imageUrl: newImageUrl };
-              console.log(`✅ State updated for paragraph ${i} with imageUrl`);
-              return updatedStory;
-            });
+          if (response.data?.imageUrl) {
+            const updatedStory = { ...data };
+            updatedStory.story[i] = { ...updatedStory.story[i], imageUrl: response.data.imageUrl };
+            setStoryData(updatedStory);
             
             // Update in Supabase if story ID exists
             const storyId = sessionStorage.getItem('storyId');
             if (storyId && user) {
               try {
-                const { error } = await supabase
+                await supabase
                   .from('stories')
                   .update({
-                    story_data: currentStoryData,
+                    story_data: updatedStory,
                   })
                   .eq('id', storyId);
-                
-                if (error) {
-                  console.error('❌ Error updating story in database:', error);
-                } else {
-                  console.log(`✅ Story updated in database for paragraph ${i} with imageUrl`);
-                }
               } catch (err: any) {
-                console.error('❌ Error updating story in database:', err);
+                console.error('Error updating story in database:', err);
               }
             }
-            
             imageGenerated = true;
-            console.log(`✅ Image generated successfully for paragraph ${i}: ${newImageUrl.substring(0, 50)}...`);
+            console.log(`✅ Image generated successfully for paragraph ${i} (attempt ${retryAttempt})`);
           } else {
             throw new Error('No imageUrl in response');
           }
@@ -215,7 +191,7 @@ export default function StoryPage() {
 
     console.log(`✅ Image generation complete! Generated ${generatedCount} images`);
     setIsGeneratingImages(false);
-  }, [user, supabase]);
+  }, []);
 
   useEffect(() => {
     if (imageGenerationStarted.current) return;
@@ -260,67 +236,63 @@ export default function StoryPage() {
     }
   }, [router, generateImages]);
 
-  // Update active image based on scroll position using Intersection Observer
+  // Update active image based on scroll position using scroll event listener
   useEffect(() => {
     if (!storyData || !storyContentRef.current) return;
 
-    // Use a small delay to ensure DOM is ready
-    const timeoutId = setTimeout(() => {
-      const observer = new IntersectionObserver(
-        (entries) => {
-          // Find the entry with the highest intersection ratio (most visible)
-          let mostVisible: { index: number; ratio: number } | null = null;
-          
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              const index = parseInt(entry.target.getAttribute('data-paragraph-index') || '0');
-              // Find the image index for this paragraph (images are at 0, 3, 6, 9...)
-              const imageIndex = Math.floor(index / 3) * 3;
-              
-              if (!mostVisible || entry.intersectionRatio > mostVisible.ratio) {
-                mostVisible = { index: imageIndex, ratio: entry.intersectionRatio };
-              }
-            }
-          });
+    const updateActiveImage = () => {
+      const container = storyContentRef.current;
+      if (!container) return;
 
-          if (mostVisible) {
-            setActiveImageIndex((prev) => {
-              if (prev !== mostVisible!.index) {
-                console.log(`🖼️ Active image changed to index ${mostVisible!.index} (paragraph ${mostVisible!.index})`);
-                return mostVisible!.index;
-              }
-              return prev;
-            });
-          }
-        },
-        {
-          root: storyContentRef.current, // Use scroll container
-          // Trigger when element is in the middle 40% of viewport
-          rootMargin: '-30% 0px -30% 0px',
-          threshold: [0, 0.1, 0.25, 0.5, 0.75, 1]
+      const paragraphs = container.querySelectorAll('[data-paragraph-index]');
+      if (paragraphs.length === 0) return;
+
+      const viewportHeight = window.innerHeight;
+      const viewportCenter = window.scrollY + viewportHeight / 2;
+
+      let closestParagraph: { index: number; distance: number } | null = null;
+
+      paragraphs.forEach((paragraph) => {
+        const rect = paragraph.getBoundingClientRect();
+        const paragraphCenter = rect.top + rect.height / 2;
+        const distance = Math.abs(viewportCenter - paragraphCenter);
+
+        if (!closestParagraph || distance < closestParagraph.distance) {
+          const index = parseInt(paragraph.getAttribute('data-paragraph-index') || '0');
+          const imageIndex = Math.floor(index / 3) * 3;
+          closestParagraph = { index: imageIndex, distance };
         }
-      );
+      });
 
-      // Observe all paragraph sections
-      const paragraphs = document.querySelectorAll('[data-paragraph-index]');
-      console.log(`📊 Observing ${paragraphs.length} paragraphs`);
-      
-      if (paragraphs.length > 0) {
-        paragraphs.forEach((p) => observer.observe(p));
-        
-        // Set initial active image
-        const firstParagraph = paragraphs[0];
-        const firstIndex = parseInt(firstParagraph.getAttribute('data-paragraph-index') || '0');
-        const firstImageIndex = Math.floor(firstIndex / 3) * 3;
-        console.log(`🖼️ Setting initial active image to index ${firstImageIndex}`);
-        setActiveImageIndex(firstImageIndex);
+      if (closestParagraph) {
+        setActiveImageIndex((prev) => {
+          if (prev !== closestParagraph!.index) {
+            console.log(`🖼️ Active image changed to index ${closestParagraph!.index}`);
+            return closestParagraph!.index;
+          }
+          return prev;
+        });
       }
+    };
 
-      return () => observer.disconnect();
+    // Set initial active image
+    const timeoutId = setTimeout(() => {
+      const paragraphs = storyContentRef.current?.querySelectorAll('[data-paragraph-index]');
+      if (paragraphs && paragraphs.length > 0) {
+        const firstIndex = parseInt(paragraphs[0].getAttribute('data-paragraph-index') || '0');
+        const firstImageIndex = Math.floor(firstIndex / 3) * 3;
+        setActiveImageIndex(firstImageIndex);
+        console.log(`🖼️ Setting initial active image to index ${firstImageIndex}`);
+      }
+      updateActiveImage();
     }, 200);
+
+    // Add scroll listener to window
+    window.addEventListener('scroll', updateActiveImage, { passive: true });
 
     return () => {
       clearTimeout(timeoutId);
+      window.removeEventListener('scroll', updateActiveImage);
     };
   }, [storyData]);
 
@@ -409,9 +381,9 @@ export default function StoryPage() {
         {/* Left: Sticky Full-Height Image (framed) */}
         <div className="hidden lg:block lg:w-1/2 lg:sticky lg:top-20 lg:h-[calc(100vh-5rem)] lg:overflow-hidden">
           <div className="h-full flex items-center justify-center p-6 xl:p-8">
-            {currentImageUrl && currentImageUrl !== '' ? (
+            {currentImageUrl ? (
               <motion.div
-                key={`image-${safeImageIndex}-${currentImageUrl.substring(0, 20)}`}
+                key={safeImageIndex}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5 }}
@@ -426,12 +398,8 @@ export default function StoryPage() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10 pointer-events-none" />
                     <img
                       src={currentImageUrl}
-                      alt={currentImagePrompt || `Scene ${Math.floor(safeImageIndex / 3) + 1}`}
+                      alt={currentImagePrompt || `Scene ${safeImageIndex + 1}`}
                       className="w-full h-full object-contain"
-                      onError={(e) => {
-                        console.error(`❌ Image failed to load: ${currentImageUrl}`);
-                        e.currentTarget.style.display = 'none';
-                      }}
                     />
                     <div className="absolute top-4 left-4 z-20">
                       <span className="episode-badge text-xs">
@@ -442,23 +410,16 @@ export default function StoryPage() {
                 </div>
               </motion.div>
             ) : (
-              <motion.div
-                key={`no-image-${safeImageIndex}`}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3 }}
-                className="relative w-full max-w-xl xl:max-w-2xl aspect-square rounded-[32px] border border-white/15 bg-black/30 flex items-center justify-center shadow-[0_25px_60px_rgba(0,0,0,0.35)]"
-              >
+              <div className="relative w-full max-w-xl xl:max-w-2xl aspect-square rounded-[32px] border border-white/15 bg-black/30 flex items-center justify-center shadow-[0_25px_60px_rgba(0,0,0,0.35)]">
                 <div className="text-center space-y-4">
                   <motion.div
                     animate={{ rotate: 360 }}
                     transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
                     className="w-16 h-16 border-4 border-red-600/30 border-t-red-600 rounded-full mx-auto"
                   />
-                  <p className="text-white/50 text-lg font-medium">Generating Image...</p>
-                  <p className="text-white/30 text-sm">Episode {Math.floor(safeImageIndex / 3) + 1}</p>
+                  <p className="text-white/50 text-sm">Generating image...</p>
                 </div>
-              </motion.div>
+              </div>
             )}
           </div>
         </div>
@@ -549,7 +510,7 @@ export default function StoryPage() {
                         />
                         <div className="absolute top-4 left-4 z-20">
                           <span className="episode-badge text-xs">
-                            EPISODE {index + 1}
+                            EPISODE {Math.floor(index / 3) + 1}
                           </span>
                         </div>
                       </div>
