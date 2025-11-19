@@ -260,63 +260,72 @@ export default function StoryDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, storyId, router, supabase]);
 
-  // Update active image based on scroll position using scroll event listener
+  // Update active image based on scroll position
+  // Algorithm: Images are at indices 0, 3, 6, 9...
+  // Image at index X covers paragraphs X, X+1, X+2 (3 paragraphs)
+  // So: image 0 covers 0-2, image 3 covers 3-5, image 6 covers 6-8, etc.
   useEffect(() => {
     if (!storyData || !storyContentRef.current) return;
 
     const updateActiveImage = () => {
-      const container = storyContentRef.current;
-      if (!container) return;
+      const paragraphs = storyContentRef.current?.querySelectorAll('[data-paragraph-index]');
+      if (!paragraphs || paragraphs.length === 0) return;
 
-      const paragraphs = container.querySelectorAll('[data-paragraph-index]');
-      if (paragraphs.length === 0) return;
+      const viewportCenter = window.innerHeight / 2;
+      let activeParagraphIndex = 0;
+      let minDistance = Infinity;
 
-      const viewportHeight = window.innerHeight;
-      const viewportCenter = window.scrollY + viewportHeight / 2;
-
-      let closestParagraph: { index: number; distance: number } | null = null;
-
+      // Find the paragraph closest to viewport center
       paragraphs.forEach((paragraph) => {
         const rect = paragraph.getBoundingClientRect();
         const paragraphCenter = rect.top + rect.height / 2;
         const distance = Math.abs(viewportCenter - paragraphCenter);
 
-        if (!closestParagraph || distance < closestParagraph.distance) {
-          const index = parseInt(paragraph.getAttribute('data-paragraph-index') || '0');
-          const imageIndex = Math.floor(index / 3) * 3;
-          closestParagraph = { index: imageIndex, distance };
+        if (distance < minDistance) {
+          minDistance = distance;
+          activeParagraphIndex = parseInt(paragraph.getAttribute('data-paragraph-index') || '0');
         }
       });
 
-      if (closestParagraph) {
-        setActiveImageIndex((prev) => {
-          if (prev !== closestParagraph!.index) {
-            console.log(`🖼️ Active image changed to index ${closestParagraph!.index}`);
-            return closestParagraph!.index;
-          }
-          return prev;
-        });
-      }
+      // Calculate which image should be shown for this paragraph
+      // Paragraphs 0,1,2 → image 0
+      // Paragraphs 3,4,5 → image 3
+      // Paragraphs 6,7,8 → image 6
+      const imageIndex = Math.floor(activeParagraphIndex / 3) * 3;
+
+      setActiveImageIndex((prev) => {
+        if (prev !== imageIndex) {
+          console.log(`🖼️ Paragraph ${activeParagraphIndex} visible → showing image at index ${imageIndex}`);
+          return imageIndex;
+        }
+        return prev;
+      });
     };
 
     // Set initial active image
     const timeoutId = setTimeout(() => {
-      const paragraphs = storyContentRef.current?.querySelectorAll('[data-paragraph-index]');
-      if (paragraphs && paragraphs.length > 0) {
-        const firstIndex = parseInt(paragraphs[0].getAttribute('data-paragraph-index') || '0');
-        const firstImageIndex = Math.floor(firstIndex / 3) * 3;
-        setActiveImageIndex(firstImageIndex);
-        console.log(`🖼️ Setting initial active image to index ${firstImageIndex}`);
-      }
       updateActiveImage();
-    }, 200);
+    }, 300);
 
-    // Add scroll listener to window
-    window.addEventListener('scroll', updateActiveImage, { passive: true });
+    // Throttle scroll events for better performance
+    let ticking = false;
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          updateActiveImage();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll, { passive: true });
 
     return () => {
       clearTimeout(timeoutId);
-      window.removeEventListener('scroll', updateActiveImage);
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
     };
   }, [storyData]);
 
