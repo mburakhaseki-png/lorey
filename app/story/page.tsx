@@ -409,7 +409,7 @@ export default function StoryPage() {
         {/* Left: Sticky Full-Height Image (framed) */}
         <div className="hidden lg:block lg:w-1/2 lg:sticky lg:top-20 lg:h-[calc(100vh-5rem)] lg:overflow-hidden">
           <div className="h-full flex items-center justify-center p-6 xl:p-8">
-            {currentImageUrl ? (
+            {currentImageUrl && currentImageUrl !== '' ? (
               <motion.div
                 key={`image-${safeImageIndex}-${currentImageUrl.substring(0, 20)}`}
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -426,8 +426,12 @@ export default function StoryPage() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10 pointer-events-none" />
                     <img
                       src={currentImageUrl}
-                      alt={currentImagePrompt || `Scene ${safeImageIndex + 1}`}
+                      alt={currentImagePrompt || `Scene ${Math.floor(safeImageIndex / 3) + 1}`}
                       className="w-full h-full object-contain"
+                      onError={(e) => {
+                        console.error(`❌ Image failed to load: ${currentImageUrl}`);
+                        e.currentTarget.style.display = 'none';
+                      }}
                     />
                     <div className="absolute top-4 left-4 z-20">
                       <span className="episode-badge text-xs">
@@ -438,16 +442,23 @@ export default function StoryPage() {
                 </div>
               </motion.div>
             ) : (
-              <div className="relative w-full max-w-xl xl:max-w-2xl aspect-square rounded-[32px] border border-white/15 bg-black/30 flex items-center justify-center shadow-[0_25px_60px_rgba(0,0,0,0.35)]">
+              <motion.div
+                key={`no-image-${safeImageIndex}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+                className="relative w-full max-w-xl xl:max-w-2xl aspect-square rounded-[32px] border border-white/15 bg-black/30 flex items-center justify-center shadow-[0_25px_60px_rgba(0,0,0,0.35)]"
+              >
                 <div className="text-center space-y-4">
                   <motion.div
                     animate={{ rotate: 360 }}
                     transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
                     className="w-16 h-16 border-4 border-red-600/30 border-t-red-600 rounded-full mx-auto"
                   />
-                  <p className="text-white/50 text-sm">Generating image...</p>
+                  <p className="text-white/50 text-lg font-medium">Generating Image...</p>
+                  <p className="text-white/30 text-sm">Episode {Math.floor(safeImageIndex / 3) + 1}</p>
                 </div>
-              </div>
+              </motion.div>
             )}
           </div>
         </div>
