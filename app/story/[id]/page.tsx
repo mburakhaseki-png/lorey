@@ -247,7 +247,7 @@ export default function StoryDetailPage() {
 
   // Update active image based on scroll position using Intersection Observer
   useEffect(() => {
-    if (!storyData) return;
+    if (!storyData || !storyContentRef.current) return;
 
     // Use a small delay to ensure DOM is ready
     const timeoutId = setTimeout(() => {
@@ -259,6 +259,7 @@ export default function StoryDetailPage() {
           entries.forEach((entry) => {
             if (entry.isIntersecting) {
               const index = parseInt(entry.target.getAttribute('data-paragraph-index') || '0');
+              // Find the image index for this paragraph (images are at 0, 3, 6, 9...)
               const imageIndex = Math.floor(index / 3) * 3;
               
               if (!mostVisible || entry.intersectionRatio > mostVisible.ratio) {
@@ -270,7 +271,7 @@ export default function StoryDetailPage() {
           if (mostVisible) {
             setActiveImageIndex((prev) => {
               if (prev !== mostVisible!.index) {
-                console.log(`🖼️ Active image changed to index ${mostVisible!.index}`);
+                console.log(`🖼️ Active image changed to index ${mostVisible!.index} (paragraph ${mostVisible!.index})`);
                 return mostVisible!.index;
               }
               return prev;
@@ -278,9 +279,9 @@ export default function StoryDetailPage() {
           }
         },
         {
-          root: null, // Use viewport instead of container
+          root: storyContentRef.current, // Use scroll container
           // Trigger when element is in the middle 60% of viewport
-          rootMargin: '-20% 0px -20% 0px',
+          rootMargin: '-30% 0px -30% 0px',
           threshold: [0, 0.1, 0.25, 0.5, 0.75, 1]
         }
       );
@@ -301,7 +302,7 @@ export default function StoryDetailPage() {
       }
 
       return () => observer.disconnect();
-    }, 100);
+    }, 200);
 
     return () => {
       clearTimeout(timeoutId);
@@ -325,9 +326,9 @@ export default function StoryDetailPage() {
     );
   }
 
-  // Get current active image URL - use getImageUrl to find the correct image for the active paragraph
+  // Get current active image URL - activeImageIndex is already the image index (0, 3, 6, 9...)
   const safeImageIndex = activeImageIndex < storyData.story.length ? activeImageIndex : 0;
-  const currentImageUrl = getImageUrl(safeImageIndex);
+  const currentImageUrl = storyData.story[safeImageIndex]?.imageUrl || null;
   const currentImagePrompt = storyData.story[safeImageIndex]?.imagePrompt || null;
 
   return (
@@ -339,9 +340,9 @@ export default function StoryDetailPage() {
         {/* Left: Sticky Full-Height Image (framed) */}
         <div className="hidden lg:block lg:w-1/2 lg:sticky lg:top-20 lg:h-[calc(100vh-5rem)] lg:overflow-hidden">
           <div className="h-full flex items-center justify-center p-6 xl:p-8">
-            {currentImageUrl ? (
+            {currentImageUrl && currentImageUrl !== '' ? (
               <motion.div
-                key={safeImageIndex}
+                key={`image-${safeImageIndex}-${currentImageUrl.substring(0, 20)}`}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5 }}
@@ -356,8 +357,12 @@ export default function StoryDetailPage() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10 pointer-events-none" />
                     <img
                       src={currentImageUrl}
-                      alt={currentImagePrompt || `Scene ${safeImageIndex + 1}`}
+                      alt={currentImagePrompt || `Scene ${Math.floor(safeImageIndex / 3) + 1}`}
                       className="w-full h-full object-contain"
+                      onError={(e) => {
+                        console.error(`❌ Image failed to load: ${currentImageUrl}`);
+                        e.currentTarget.style.display = 'none';
+                      }}
                     />
                     <div className="absolute top-4 left-4 z-20">
                       <span className="episode-badge text-xs">
@@ -368,13 +373,19 @@ export default function StoryDetailPage() {
                 </div>
               </motion.div>
             ) : (
-              <div className="relative w-full max-w-xl xl:max-w-2xl aspect-square rounded-[32px] border border-white/15 bg-black/30 flex items-center justify-center shadow-[0_25px_60px_rgba(0,0,0,0.35)]">
+              <motion.div
+                key={`no-image-${safeImageIndex}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+                className="relative w-full max-w-xl xl:max-w-2xl aspect-square rounded-[32px] border border-white/15 bg-black/30 flex items-center justify-center shadow-[0_25px_60px_rgba(0,0,0,0.35)]"
+              >
                 <div className="text-center space-y-4">
                   <div className="text-6xl mb-2">🖼️</div>
-                  <p className="text-white/50 text-lg font-medium">No Image</p>
-                  <p className="text-white/30 text-sm">Image not available</p>
+                  <p className="text-white/50 text-lg font-medium">Image Generating...</p>
+                  <p className="text-white/30 text-sm">Episode {Math.floor(safeImageIndex / 3) + 1}</p>
                 </div>
-              </div>
+              </motion.div>
             )}
           </div>
         </div>
