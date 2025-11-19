@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter, useParams } from 'next/navigation';
 import axios from 'axios';
 import Quiz from '@/components/Quiz';
@@ -29,58 +29,19 @@ export default function StoryDetailPage() {
   const [isGeneratingImages, setIsGeneratingImages] = useState(false);
   const animationsPlayedRef = useRef<Set<number>>(new Set());
 
-  const { scrollYProgress } = useScroll({
-    container: storyContentRef,
-  });
-
-  const getImageForParagraph = useCallback((paragraphIndex: number): number | null => {
-    if (!storyData) return null;
-    const imageIndex = Math.floor(paragraphIndex / 3) * 3;
-    if (imageIndex < storyData.story.length) {
-      const paragraph = storyData.story[imageIndex];
-      if (paragraph?.imageUrl || paragraph?.imagePrompt) {
-        return imageIndex;
-      }
-    }
-    return null;
-  }, [storyData]);
-
-  const getImageUrl = useCallback((paragraphIndex: number) => {
-    const imageIndex = getImageForParagraph(paragraphIndex);
-    if (imageIndex === null || !storyData) return null;
-    const paragraph = storyData.story[imageIndex];
-    const imageUrl = paragraph?.imageUrl;
-    return imageUrl && imageUrl !== '' ? imageUrl : null;
-  }, [getImageForParagraph, storyData]);
-
-  const handleQuizRegenerate = (index: number) => (newQuiz: QuizType) => {
-    setStoryData((prevData) => {
-      if (!prevData) return prevData;
-      const newStory = [...prevData.story];
-      newStory[index] = { ...newStory[index], quiz: newQuiz };
-      return { ...prevData, story: newStory };
-    });
-  };
-
-  const handleBackToHome = () => {
-    router.push('/my-stories');
-  };
-
   // Generate images for paragraphs that need them
   const generateImages = useCallback(async (initialData: StoryData, universeContext: string) => {
     if (!initialData.story || initialData.story.length === 0) return;
 
-    // More strict check: only generate if imageUrl is truly missing
     const paragraphsNeedingImages = initialData.story.filter((p, idx) => {
       if (idx % 3 !== 0) return false;
       if (!p.imagePrompt || p.imagePrompt === null) return false;
-      // Check if imageUrl is missing or empty
       const hasImageUrl = p.imageUrl && p.imageUrl !== '' && p.imageUrl !== null && p.imageUrl !== undefined;
       return !hasImageUrl;
     });
 
     if (paragraphsNeedingImages.length === 0) {
-      console.log('✅ All images already generated - skipping image generation');
+      console.log('✅ All images already generated');
       return;
     }
 
@@ -90,17 +51,14 @@ export default function StoryDetailPage() {
     setCurrentGeneratingImage(0);
 
     let generatedCount = 0;
-    // Keep track of updated story data as we generate images
     let currentStoryData = { ...initialData };
     currentStoryData.story = [...initialData.story];
 
     for (let i = 0; i < initialData.story.length; i += 3) {
       const paragraph = initialData.story[i];
-
-      // Skip if no imagePrompt or if imageUrl already exists
       const hasImageUrl = paragraph.imageUrl && paragraph.imageUrl !== '' && paragraph.imageUrl !== null && paragraph.imageUrl !== undefined;
+      
       if (!paragraph.imagePrompt || paragraph.imagePrompt === null || hasImageUrl) {
-        console.log(`⏭️ Skipping paragraph ${i} - ${hasImageUrl ? 'image already exists' : 'no imagePrompt'}`);
         continue;
       }
 
@@ -114,12 +72,10 @@ export default function StoryDetailPage() {
       for (let retryAttempt = 1; retryAttempt <= maxRetries && !imageGenerated; retryAttempt++) {
         try {
           if (retryAttempt > 1) {
-            console.log(`🔄 Retrying image generation for paragraph ${i} (attempt ${retryAttempt}/${maxRetries})...`);
             const waitTime = Math.min(2000 * Math.pow(2, retryAttempt - 2), 4000);
             await new Promise(resolve => setTimeout(resolve, waitTime));
           }
 
-          // Get API URL and clean it (remove trailing slashes)
           let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
           apiUrl = apiUrl.trim().replace(/\/+$/, '');
 
@@ -131,10 +87,8 @@ export default function StoryDetailPage() {
           if (response.data?.imageUrl && response.data.imageUrl !== '') {
             const newImageUrl = response.data.imageUrl;
             
-            // Update local copy first
             currentStoryData.story[i] = { ...currentStoryData.story[i], imageUrl: newImageUrl };
             
-            // Update state using functional update
             setStoryData((prevData) => {
               if (!prevData) return prevData;
               const updatedStory = { ...prevData };
@@ -143,48 +97,35 @@ export default function StoryDetailPage() {
               return updatedStory;
             });
             
-            // Update in Supabase - use currentStoryData which is always up to date
             if (user && storyId) {
               try {
-                const { error } = await supabase
+                await supabase
                   .from('stories')
-                  .update({
-                    story_data: currentStoryData,
-                  })
+                  .update({ story_data: currentStoryData })
                   .eq('id', storyId)
                   .eq('user_id', user.id);
-                
-                if (error) {
-                  console.error('❌ Error updating story in database:', error);
-                  // Don't throw - continue with other images even if one fails to save
-                } else {
-                  console.log(`✅ Story updated in database for paragraph ${i} with imageUrl: ${newImageUrl.substring(0, 50)}...`);
-                }
               } catch (err: any) {
-                console.error('❌ Error updating story in database:', err);
-                // Don't throw - continue with other images even if one fails to save
+                console.error('Error updating story:', err);
               }
             }
             
             imageGenerated = true;
-            console.log(`✅ Image generated successfully for paragraph ${i}: ${newImageUrl.substring(0, 50)}...`);
+            console.log(`✅ Image generated for paragraph ${i}`);
           } else {
             throw new Error('No imageUrl in response');
           }
         } catch (err) {
-          console.error(`❌ Failed to generate image for paragraph ${i} (attempt ${retryAttempt}/${maxRetries}):`, err);
-          if (retryAttempt === maxRetries) {
-            console.error(`❌ All ${maxRetries} attempts failed for paragraph ${i}. Skipping...`);
-          }
+          console.error(`❌ Failed to generate image for paragraph ${i} (attempt ${retryAttempt}):`, err);
         }
       }
     }
 
+    console.log(`✅ Image generation complete! Generated ${generatedCount} images`);
     setIsGeneratingImages(false);
     setCurrentGeneratingImage(0);
-    console.log(`✅ Image generation complete! Generated ${generatedCount} images`);
   }, [user, storyId, supabase]);
 
+  // Load story from Supabase
   useEffect(() => {
     const loadStory = async () => {
       if (!user || !storyId) {
@@ -208,44 +149,24 @@ export default function StoryDetailPage() {
         }
 
         const loadedStoryData = data.story_data as StoryData;
-        
-        // Debug: Log image status
-        const imageStatus = loadedStoryData.story
-          .map((p: any, idx: number) => ({
-            index: idx,
-            hasPrompt: !!p.imagePrompt,
-            hasImageUrl: !!(p.imageUrl && p.imageUrl !== ''),
-            imageUrl: p.imageUrl || 'MISSING'
-          }))
-          .filter((item: any) => item.index % 3 === 0);
-        console.log('📊 Image status from database:', imageStatus);
-        
         setStoryData(loadedStoryData);
         setUniverse(data.universe);
         setIsLoading(false);
 
-        // Check if images need to be generated
-        // Only generate if imagePrompt exists AND imageUrl is truly missing (null, undefined, or empty string)
         const needsImageGeneration = loadedStoryData.story.some(
           (p: any, idx: number) => {
             if (idx % 3 !== 0) return false;
             if (!p.imagePrompt || p.imagePrompt === null) return false;
-            // Check if imageUrl is missing or empty
             const hasImageUrl = p.imageUrl && p.imageUrl !== '' && p.imageUrl !== null && p.imageUrl !== undefined;
             return !hasImageUrl;
           }
         );
 
         if (needsImageGeneration) {
-          console.log('🖼️ Some images are missing, generating them...');
-          // Use the loaded data directly, don't pass through state
-          // Don't await - let it run in background
           generateImages(loadedStoryData, data.universe).catch((err) => {
-            console.error('❌ Error during image generation:', err);
+            console.error('Error during image generation:', err);
             setError('Some images failed to generate. Please refresh the page.');
           });
-        } else {
-          console.log('✅ All images are already generated and saved - no regeneration needed');
         }
       } catch (err: any) {
         console.error('Error loading story:', err);
@@ -257,38 +178,20 @@ export default function StoryDetailPage() {
     if (user) {
       loadStory();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, storyId, router, supabase]);
+  }, [user, storyId, router, supabase, generateImages]);
 
   // Update active image based on scroll position
-  // Algorithm: Images are at indices 0, 3, 6, 9...
-  // Image at index X covers paragraphs X, X+1, X+2 (3 paragraphs)
-  // So: image 0 covers 0-2, image 3 covers 3-5, image 6 covers 6-8, etc.
   useEffect(() => {
-    if (!storyData || !storyContentRef.current) {
-      console.log('⚠️ Scroll listener: storyData or storyContentRef missing');
-      return;
-    }
+    if (!storyData || !storyContentRef.current) return;
 
     const updateActiveImage = () => {
-      if (!storyContentRef.current) {
-        console.log('⚠️ Scroll listener: storyContentRef.current is null');
-        return;
-      }
-
-      const paragraphs = storyContentRef.current.querySelectorAll('[data-paragraph-index]');
-      console.log(`📊 Found ${paragraphs.length} paragraphs`);
-      
-      if (paragraphs.length === 0) {
-        console.log('⚠️ No paragraphs found');
-        return;
-      }
+      const paragraphs = storyContentRef.current?.querySelectorAll('[data-paragraph-index]');
+      if (!paragraphs || paragraphs.length === 0) return;
 
       const viewportCenter = window.innerHeight / 2;
-      let activeParagraphIndex = 0;
+      let closestIndex = 0;
       let minDistance = Infinity;
 
-      // Find the paragraph closest to viewport center
       paragraphs.forEach((paragraph) => {
         const rect = paragraph.getBoundingClientRect();
         const paragraphCenter = rect.top + rect.height / 2;
@@ -297,69 +200,50 @@ export default function StoryDetailPage() {
 
         if (distance < minDistance) {
           minDistance = distance;
-          activeParagraphIndex = index;
+          closestIndex = index;
         }
       });
 
-      // Calculate which image should be shown for this paragraph
-      // Paragraphs 0,1,2 → image 0
-      // Paragraphs 3,4,5 → image 3
-      // Paragraphs 6,7,8 → image 6
-      const imageIndex = Math.floor(activeParagraphIndex / 3) * 3;
-
-      console.log(`🖼️ Scroll update: Paragraph ${activeParagraphIndex} visible → image index ${imageIndex}, current activeImageIndex: ${activeImageIndex}`);
+      // Calculate image index: paragraphs 0,1,2 → image 0, paragraphs 3,4,5 → image 3, etc.
+      const imageIndex = Math.floor(closestIndex / 3) * 3;
 
       setActiveImageIndex((prev) => {
         if (prev !== imageIndex) {
-          console.log(`✅ Changing image from index ${prev} to ${imageIndex}`);
+          console.log(`🖼️ Scroll: Paragraph ${closestIndex} → Image ${imageIndex}`);
           return imageIndex;
         }
         return prev;
       });
     };
 
-    // Set initial active image immediately
-    updateActiveImage();
+    // Initial update
+    const timeoutId = setTimeout(updateActiveImage, 100);
 
-    // Also set after a delay to ensure DOM is ready
-    const timeoutId = setTimeout(() => {
-      console.log('⏰ Initial image update after timeout');
-      updateActiveImage();
-    }, 500);
-
-    // Add scroll listener - NO throttling for immediate response
+    // Scroll listener
     const handleScroll = () => {
       updateActiveImage();
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('resize', handleScroll, { passive: true });
 
     return () => {
       clearTimeout(timeoutId);
       window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('resize', handleScroll);
     };
   }, [storyData]);
 
-  // Get current active image URL - activeImageIndex is already the image index (0, 3, 6, 9...)
-  const safeImageIndex = storyData && activeImageIndex < storyData.story.length ? activeImageIndex : (storyData ? 0 : -1);
-  const currentImageUrl = storyData && safeImageIndex >= 0 ? storyData.story[safeImageIndex]?.imageUrl || null : null;
-  const currentImagePrompt = storyData && safeImageIndex >= 0 ? storyData.story[safeImageIndex]?.imagePrompt || null : null;
-  
-  // Debug: Log current image status
-  useEffect(() => {
-    if (storyData && safeImageIndex >= 0 && safeImageIndex < storyData.story.length) {
-      const paragraph = storyData.story[safeImageIndex];
-      console.log(`🖼️ RENDER: activeImageIndex=${activeImageIndex}, safeImageIndex=${safeImageIndex}, Has URL: ${!!paragraph?.imageUrl}, URL: ${paragraph?.imageUrl?.substring(0, 50) || 'null'}...`);
-      
-      // Log all images for debugging
-      const allImages = storyData.story
-        .map((p: any, idx: number) => ({ index: idx, hasUrl: !!p.imageUrl, url: p.imageUrl?.substring(0, 30) || 'null' }))
-        .filter((item: any) => item.index % 3 === 0);
-      console.log('📸 All images:', allImages);
-    }
-  }, [activeImageIndex, safeImageIndex, storyData]);
+  const handleQuizRegenerate = (index: number) => (newQuiz: QuizType) => {
+    setStoryData((prevData) => {
+      if (!prevData) return prevData;
+      const newStory = [...prevData.story];
+      newStory[index] = { ...newStory[index], quiz: newQuiz };
+      return { ...prevData, story: newStory };
+    });
+  };
+
+  const handleBackToHome = () => {
+    router.push('/my-stories');
+  };
 
   if (isLoading) {
     return <FullPageLoader message="Loading your episode..." showSnake={false} />;
@@ -370,24 +254,28 @@ export default function StoryDetailPage() {
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="text-center space-y-4">
           <p className="text-rose-300">{error || 'Story not found'}</p>
-          <button onClick={handleBackToHome} className="netflix-button">
-            Back to My Stories
-          </button>
+          <button onClick={handleBackToHome} className="netflix-button">Back to My Stories</button>
         </div>
       </div>
     );
   }
 
+  // Get current image
+  const safeImageIndex = activeImageIndex < storyData.story.length ? activeImageIndex : 0;
+  const currentImageUrl = storyData.story[safeImageIndex]?.imageUrl || null;
+  const currentImagePrompt = storyData.story[safeImageIndex]?.imagePrompt || null;
+
   return (
     <>
       <Header />
+      
       <AnimatePresence>
         {isGeneratingImages && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="fixed top-24 right-6 bg-black/90 border border-white/10 rounded-xl p-4 backdrop-blur-xl z-50 shadow-2xl"
+            className="fixed top-24 right-6 bg-black/90 border border-white/10 rounded-xl p-4 backdrop-blur-xl z-50"
           >
             <div className="flex items-center gap-3">
               <motion.div
@@ -405,35 +293,26 @@ export default function StoryDetailPage() {
           </motion.div>
         )}
       </AnimatePresence>
-      
-      {/* Main Layout: 50/50 Split - Sticky Image Left + Scrollable Content Right */}
+
       <div className="flex min-h-screen pt-20">
-        {/* Left: Sticky Full-Height Image (framed) */}
+        {/* Left: Sticky Image */}
         <div className="hidden lg:block lg:w-1/2 lg:sticky lg:top-20 lg:h-[calc(100vh-5rem)] lg:overflow-hidden">
           <div className="h-full flex items-center justify-center p-6 xl:p-8">
-            {currentImageUrl && currentImageUrl !== '' ? (
+            {currentImageUrl ? (
               <motion.div
-                key={`image-${safeImageIndex}-${currentImageUrl.substring(0, 20)}`}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5 }}
-                className="relative w-full max-w-xl xl:max-w-2xl aspect-square"
+                key={`img-${safeImageIndex}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+                className="relative w-full max-w-xl aspect-square"
               >
-                {/* Outer frame */}
-                <div className="absolute inset-0 rounded-[32px] border border-white/15 bg-gradient-to-b from-white/10/ via-white/0 to-white/5 opacity-80" />
-                <div className="absolute inset-0 rounded-[32px] shadow-[0_25px_60px_rgba(0,0,0,0.35)]" />
-
+                <div className="absolute inset-0 rounded-[32px] border border-white/15 bg-gradient-to-b from-white/10 via-white/0 to-white/5 opacity-80" />
                 <div className="relative h-full w-full p-4">
                   <div className="relative h-full w-full rounded-[26px] overflow-hidden border border-white/10 bg-black/40 flex items-center justify-center p-2">
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10 pointer-events-none" />
                     <img
                       src={currentImageUrl}
                       alt={currentImagePrompt || `Scene ${Math.floor(safeImageIndex / 3) + 1}`}
                       className="w-full h-full object-contain"
-                      onError={(e) => {
-                        console.error(`❌ Image failed to load: ${currentImageUrl}`);
-                        e.currentTarget.style.display = 'none';
-                      }}
                     />
                     <div className="absolute top-4 left-4 z-20">
                       <span className="episode-badge text-xs">
@@ -444,13 +323,7 @@ export default function StoryDetailPage() {
                 </div>
               </motion.div>
             ) : (
-              <motion.div
-                key={`no-image-${safeImageIndex}`}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3 }}
-                className="relative w-full max-w-xl xl:max-w-2xl aspect-square rounded-[32px] border border-white/15 bg-black/30 flex items-center justify-center shadow-[0_25px_60px_rgba(0,0,0,0.35)]"
-              >
+              <div className="relative w-full max-w-xl aspect-square rounded-[32px] border border-white/15 bg-black/30 flex items-center justify-center">
                 <div className="text-center space-y-4">
                   <motion.div
                     className="w-12 h-12 border-4 border-red-600/30 border-t-red-600 rounded-full mx-auto"
@@ -460,38 +333,23 @@ export default function StoryDetailPage() {
                   <p className="text-white/50 text-lg font-medium">Image Generating...</p>
                   <p className="text-white/30 text-sm">Episode {Math.floor(safeImageIndex / 3) + 1}</p>
                 </div>
-              </motion.div>
+              </div>
             )}
           </div>
         </div>
 
-        {/* Right: Scrollable Story Content (50% width) */}
+        {/* Right: Scrollable Content */}
         <div ref={storyContentRef} className="flex-1 lg:w-1/2">
-          {/* Hero Section */}
           <section className="min-h-screen flex items-center justify-center px-4 py-20">
             <div className="max-w-3xl mx-auto text-center space-y-6">
-              <motion.span
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="episode-badge text-sm"
-              >
-                {universe || 'Your Story'}
-              </motion.span>
-
+              <motion.span className="episode-badge text-sm">{universe || 'Your Story'}</motion.span>
               <h1 className="text-5xl md:text-7xl font-black tracking-tight">
                 <span className="block text-gradient-red glow-red">
                   {storyData.title || `${universe} Learning Journey`}
                 </span>
               </h1>
-
-              {/* Learning Outcomes */}
               {storyData.learningOutcomes && storyData.learningOutcomes.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="max-w-2xl mx-auto"
-                >
+                <motion.div className="max-w-2xl mx-auto">
                   <p className="text-sm font-semibold uppercase tracking-wider text-white/50 mb-3">
                     Learning Outcomes
                   </p>
@@ -499,9 +357,6 @@ export default function StoryDetailPage() {
                     {storyData.learningOutcomes.map((outcome, index) => (
                       <motion.div
                         key={index}
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.3 + index * 0.1 }}
                         className="px-4 py-2 bg-white/5 border border-white/10 rounded-full text-sm text-white/80"
                       >
                         {outcome}
@@ -510,13 +365,12 @@ export default function StoryDetailPage() {
                   </div>
                 </motion.div>
               )}
-
             </div>
           </section>
 
-          {/* Story Paragraphs */}
           {storyData.story.map((paragraph: any, index: number) => {
-            const imageUrl = getImageUrl(index);
+            const imageIndex = Math.floor(index / 3) * 3;
+            const imageUrl = storyData.story[imageIndex]?.imageUrl || null;
             const hasAnimated = animationsPlayedRef.current.has(index);
             
             return (
@@ -527,59 +381,32 @@ export default function StoryDetailPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={hasAnimated ? { duration: 0 } : { duration: 0.6, delay: index * 0.05 }}
                 onAnimationComplete={() => {
-                  if (!hasAnimated) {
-                    animationsPlayedRef.current.add(index);
-                  }
+                  if (!hasAnimated) animationsPlayedRef.current.add(index);
                 }}
                 className="min-h-screen flex items-center justify-center px-4 py-20"
               >
                 <div className="max-w-3xl mx-auto w-full space-y-8">
-                  {/* Mobile Image */}
                   {imageUrl && (
-                    <motion.div
-                      initial={{ opacity: hasAnimated ? 1 : 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={hasAnimated ? { duration: 0 } : { duration: 0.4, delay: index * 0.05 + 0.1 }}
-                      className="lg:hidden relative aspect-square rounded-[28px] border border-white/15 bg-black/30 p-3 shadow-lg"
-                    >
+                    <motion.div className="lg:hidden relative aspect-square rounded-[28px] border border-white/15 bg-black/30 p-3">
                       <div className="relative h-full w-full rounded-2xl overflow-hidden bg-black/40 flex items-center justify-center p-2">
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10 pointer-events-none" />
-                        <img
-                          src={imageUrl}
-                          alt={paragraph.imagePrompt || `Scene ${index + 1}`}
-                          className="w-full h-full object-contain"
-                        />
+                        <img src={imageUrl} alt={paragraph.imagePrompt || `Scene ${index + 1}`} className="w-full h-full object-contain" />
                         <div className="absolute top-4 left-4 z-20">
-                          <span className="episode-badge text-xs">
-                            EPISODE {Math.floor(index / 3) + 1}
-                          </span>
+                          <span className="episode-badge text-xs">EPISODE {Math.floor(index / 3) + 1}</span>
                         </div>
                       </div>
                     </motion.div>
                   )}
 
-                  {/* Paragraph Text */}
                   {paragraph.paragraph && (
-                    <motion.div
-                      initial={{ opacity: hasAnimated ? 1 : 0, y: hasAnimated ? 0 : 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={hasAnimated ? { duration: 0 } : { duration: 0.5, delay: index * 0.05 + 0.2 }}
-                      className="bg-black/40 border border-white/10 rounded-2xl p-8 md:p-10 backdrop-blur-xl"
-                    >
+                    <motion.div className="bg-black/40 border border-white/10 rounded-2xl p-8 md:p-10 backdrop-blur-xl">
                       <p className="text-lg md:text-xl leading-relaxed text-white/90 whitespace-pre-wrap">
                         {paragraph.paragraph}
                       </p>
                     </motion.div>
                   )}
 
-                  {/* Quiz */}
                   {paragraph.quiz && (
-                    <motion.div
-                      initial={{ opacity: hasAnimated ? 1 : 0, y: hasAnimated ? 0 : 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={hasAnimated ? { duration: 0 } : { duration: 0.5, delay: index * 0.05 + 0.3 }}
-                      className="bg-black/40 border border-white/10 rounded-2xl p-6 backdrop-blur-xl"
-                    >
+                    <motion.div className="bg-black/40 border border-white/10 rounded-2xl p-6 backdrop-blur-xl">
                       <Quiz
                         quiz={paragraph.quiz}
                         concept={paragraph.paragraph?.substring(0, 100) || ''}
@@ -593,12 +420,9 @@ export default function StoryDetailPage() {
             );
           })}
 
-          {/* Footer */}
           <footer className="min-h-screen flex items-center justify-center px-4 py-20">
             <div className="max-w-3xl mx-auto text-center space-y-6">
-              <h2 className="text-3xl md:text-4xl font-bold text-white">
-                Story Complete! 🎉
-              </h2>
+              <h2 className="text-3xl md:text-4xl font-bold text-white">Story Complete! 🎉</h2>
               <p className="text-white/60 text-lg">
                 You've completed all {storyData.story.length} episodes. Ready to learn something new?
               </p>
