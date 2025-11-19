@@ -717,13 +717,32 @@ export default function HomePage() {
                   <motion.button
                     whileHover={isMobile ? {} : { scale: 1.02 }}
                     whileTap={isMobile ? {} : { scale: 0.98 }}
-                    onClick={() => {
+                    onClick={async () => {
                       if (!authLoading && !user) {
                         setAuthMode('signup');
                         setAuthModalOpen(true);
                       } else {
-                        // TODO: Redirect to Lemon Squeezy checkout
-                        console.log('Subscribe to', plan.name);
+                        try {
+                          setIsLoading(true);
+                          const response = await fetch('/api/subscription/create-checkout', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ planName: plan.name.toLowerCase() })
+                          });
+
+                          const data = await response.json();
+
+                          if (data.checkoutUrl) {
+                            window.location.href = data.checkoutUrl;
+                          } else {
+                            setError(data.error || 'Failed to create checkout session');
+                            setIsLoading(false);
+                          }
+                        } catch (err) {
+                          console.error('Checkout error:', err);
+                          setError('Failed to start checkout. Please try again.');
+                          setIsLoading(false);
+                        }
                       }
                     }}
                     className={`w-full py-3 rounded-lg font-semibold transition-all ${
