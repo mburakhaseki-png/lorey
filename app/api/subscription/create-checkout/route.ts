@@ -60,6 +60,39 @@ export async function POST(request: NextRequest) {
     console.log('🔗 Redirect URL:', redirectUrl);
 
     // Create checkout session with Lemon Squeezy
+    const checkoutPayload = {
+      data: {
+        type: 'checkouts',
+        attributes: {
+          checkout_data: {
+            email: user.email,
+            custom: {
+              user_id: user.id,
+            },
+          },
+          checkout_options: {
+            redirect_url: redirectUrl,
+          },
+        },
+        relationships: {
+          store: {
+            data: {
+              type: 'stores',
+              id: LEMONSQUEEZY_STORE_ID,
+            },
+          },
+          variant: {
+            data: {
+              type: 'variants',
+              id: variantId,
+            },
+          },
+        },
+      },
+    };
+
+    console.log('📤 Checkout payload:', JSON.stringify(checkoutPayload, null, 2));
+
     const response = await fetch('https://api.lemonsqueezy.com/v1/checkouts', {
       method: 'POST',
       headers: {
@@ -67,42 +100,28 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/vnd.api+json',
         'Authorization': `Bearer ${LEMONSQUEEZY_API_KEY}`,
       },
-      body: JSON.stringify({
-        data: {
-          type: 'checkouts',
-          attributes: {
-            checkout_data: {
-              email: user.email,
-              custom: {
-                user_id: user.id,
-              },
-            },
-            redirect_url: redirectUrl,
-          },
-          relationships: {
-            store: {
-              data: {
-                type: 'stores',
-                id: LEMONSQUEEZY_STORE_ID,
-              },
-            },
-            variant: {
-              data: {
-                type: 'variants',
-                id: variantId,
-              },
-            },
-          },
-        },
-      }),
+      body: JSON.stringify(checkoutPayload),
     });
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error('Lemon Squeezy error:', errorData);
+      console.error('❌ Lemon Squeezy API error:', errorData);
+      console.error('❌ Response status:', response.status);
+      console.error('❌ Response statusText:', response.statusText);
+      
+      // Try to parse error as JSON
+      let errorMessage = 'Failed to create checkout session';
+      try {
+        const errorJson = JSON.parse(errorData);
+        errorMessage = errorJson.errors?.[0]?.detail || errorMessage;
+      } catch (e) {
+        // If not JSON, use the raw error
+        errorMessage = errorData;
+      }
+      
       return NextResponse.json(
-        { error: 'Failed to create checkout session' },
-        { status: 500 }
+        { error: errorMessage, details: errorData },
+        { status: response.status || 500 }
       );
     }
 
