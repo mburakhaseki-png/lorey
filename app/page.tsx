@@ -11,6 +11,7 @@ import Header from '@/components/Header';
 import AuthModal from '@/components/AuthModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/utils/supabase/client';
+import { getUserSubscription, type UserSubscription } from '@/utils/subscription';
 import type { StoryData } from '@/utils/types';
 
 type UploadType = 'file' | null;
@@ -55,6 +56,8 @@ export default function HomePage() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signup');
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
+  const [subscription, setSubscription] = useState<UserSubscription | null>(null);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(false);
 
   // Simplified animation props for mobile - no animations on mobile
   const mobileAnimationProps = {
@@ -86,6 +89,27 @@ export default function HomePage() {
     }, 3000);
     return () => clearInterval(interval);
   }, []);
+
+  // Fetch subscription status
+  useEffect(() => {
+    const fetchSubscription = async () => {
+      if (user && !authLoading) {
+        setSubscriptionLoading(true);
+        try {
+          const sub = await getUserSubscription(user.id);
+          setSubscription(sub);
+        } catch (error) {
+          console.error('Error fetching subscription:', error);
+        } finally {
+          setSubscriptionLoading(false);
+        }
+      } else {
+        setSubscription(null);
+      }
+    };
+
+    fetchSubscription();
+  }, [user, authLoading]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -620,7 +644,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Pricing Section */}
+      {/* Pricing Section - Only show if user doesn't have active subscription */}
+      {(!subscription || subscription.status !== 'active') && (
       <section id="pricing" className="relative py-24 px-4 sm:px-6 overflow-x-hidden bg-black/60 border-y border-white/5">
         <div className="absolute inset-0 opacity-20 pointer-events-none overflow-hidden">
           <div className="absolute top-1/2 left-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-red-600/30 blur-[140px]" />
@@ -708,9 +733,12 @@ export default function HomePage() {
                     <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
                     <p className="text-white/60 text-sm">{plan.description}</p>
                   </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-5xl font-bold text-white">${plan.price}</span>
-                    <span className="text-white/50 text-sm">/month</span>
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-5xl font-bold text-white">${plan.price}</span>
+                      <span className="text-white/50 text-sm">/month</span>
+                    </div>
+                    <span className="text-white/40 text-xs">${(plan.price * 1.20).toFixed(2)} with 20% VAT</span>
                   </div>
                   <ul className="space-y-3 pb-6">
                     {plan.features.map((feature) => (
@@ -782,6 +810,7 @@ export default function HomePage() {
           </motion.div>
         </div>
       </section>
+      )}
 
       {/* Final CTA - Minimal */}
       <section className="relative py-24 px-4 sm:px-6 overflow-x-hidden bg-gradient-to-b from-black/30 to-black border-y border-white/5">

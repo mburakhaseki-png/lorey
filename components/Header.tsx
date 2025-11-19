@@ -77,7 +77,7 @@ export default function Header() {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="hidden sm:block px-5 py-2 text-sm font-medium text-white/70 hover:text-white transition-colors"
+              className="px-5 py-2 text-sm font-medium text-white/70 hover:text-white transition-colors"
             >
                       My Stories
             </motion.button>

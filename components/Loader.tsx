@@ -329,7 +329,7 @@ function SnakeGame() {
         {/* Sound Toggle Button */}
         <button
           onClick={toggleSound}
-          className="px-4 py-3 bg-gradient-to-r from-blue-600/20 to-cyan-600/20 border border-blue-500/30 rounded-full backdrop-blur-sm hover:from-blue-600/30 hover:to-cyan-600/30 transition-all"
+          className="px-4 py-3 bg-gradient-to-r from-blue-600/20 to-cyan-600/20 border border-blue-500/30 rounded-full hover:from-blue-600/30 hover:to-cyan-600/30 transition-all"
           title={soundEnabled ? 'Disable sound' : 'Enable sound'}
         >
           {soundEnabled ? (
