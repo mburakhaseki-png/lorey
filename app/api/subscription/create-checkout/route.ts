@@ -51,6 +51,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get the origin URL (production or localhost)
+    const origin = request.headers.get('origin') || 
+                   process.env.NEXT_PUBLIC_SITE_URL || 
+                   'https://loreyai.com';
+    const redirectUrl = `${origin}/?subscription=success`;
+
+    console.log('🔗 Redirect URL:', redirectUrl);
+
     // Create checkout session with Lemon Squeezy
     const response = await fetch('https://api.lemonsqueezy.com/v1/checkouts', {
       method: 'POST',
@@ -69,6 +77,7 @@ export async function POST(request: NextRequest) {
                 user_id: user.id,
               },
             },
+            redirect_url: redirectUrl,
           },
           relationships: {
             store: {
