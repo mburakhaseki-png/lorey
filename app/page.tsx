@@ -55,11 +55,11 @@ export default function HomePage() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signup');
 
-  // Simplified animation props for mobile
+  // Simplified animation props for mobile - no animations on mobile
   const mobileAnimationProps = {
-    initial: { opacity: 1 },
-    animate: { opacity: 1 },
-    whileInView: { opacity: 1 },
+    initial: { opacity: 1, y: 0, x: 0, scale: 1 },
+    animate: { opacity: 1, y: 0, x: 0, scale: 1 },
+    whileInView: { opacity: 1, y: 0, x: 0, scale: 1 },
     transition: { duration: 0 },
   };
 
@@ -72,7 +72,8 @@ export default function HomePage() {
 
   const getAnimationProps = (customProps?: any) => {
     if (isMobile) {
-      return { ...mobileAnimationProps, ...customProps };
+      // On mobile, always return no animation regardless of custom props
+      return mobileAnimationProps;
     }
     return { ...desktopAnimationProps, ...customProps };
   };
@@ -110,6 +111,32 @@ export default function HomePage() {
       return;
     }
 
+    // Check if user has active subscription
+    if (user) {
+      try {
+        const response = await fetch('/api/subscription/check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user.id })
+        });
+
+        const { canCreate, error: checkError } = await response.json();
+
+        if (!canCreate) {
+          setError(checkError || 'No active subscription or story limit reached');
+          // Scroll to pricing section
+          const pricingSection = document.getElementById('pricing');
+          if (pricingSection) {
+            pricingSection.scrollIntoView({ behavior: 'smooth' });
+          }
+          return;
+        }
+      } catch (err) {
+        console.error('Subscription check failed:', err);
+        setError('Failed to verify subscription. Please try again.');
+        return;
+      }
+    }
 
     if (!uploadType || !file) {
       setError('Please upload a file');
@@ -188,6 +215,19 @@ export default function HomePage() {
 
       const storyData: StoryData = response.data;
       const storyUniverse = universe || 'Custom Universe';
+
+      // Increment story usage count
+      if (user) {
+        try {
+          await fetch('/api/subscription/increment-usage', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+          });
+        } catch (err) {
+          console.error('Failed to increment story usage:', err);
+          // Continue anyway - story was generated successfully
+        }
+      }
 
       // Save to sessionStorage for immediate viewing
       sessionStorage.setItem('storyData', JSON.stringify(storyData));
@@ -572,6 +612,146 @@ export default function HomePage() {
               </motion.div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section id="pricing" className="relative py-24 px-4 sm:px-6 overflow-x-hidden bg-black/60 border-y border-white/5">
+        <div className="absolute inset-0 opacity-20 pointer-events-none overflow-hidden">
+          <div className="absolute top-1/2 left-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-red-600/30 blur-[140px]" />
+          <div className="absolute bottom-1/3 right-1/4 w-56 h-56 sm:w-80 sm:h-80 bg-purple-600/30 blur-[180px]" />
+        </div>
+        <div className="max-w-6xl w-full mx-auto relative z-10">
+          <motion.div
+            {...getAnimationProps({ viewport: { once: true } })}
+            className="text-center space-y-4 mb-16"
+          >
+            <p className="text-white/40 text-xs tracking-[0.4em] uppercase">Pricing</p>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white">Pick your binge plan</h2>
+            <p className="text-white/60 text-base sm:text-lg max-w-2xl mx-auto">
+              Monthly subscriptions. Cancel anytime. All plans include full access to all universes and features.
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              {
+                name: 'Slacker',
+                price: 15,
+                stories: 10,
+                description: 'Perfect for casual learners',
+                features: [
+                  '10 stories per month',
+                  'All universes',
+                  'Interactive quizzes',
+                  'HD image generation'
+                ],
+                highlighted: false
+              },
+              {
+                name: 'Student',
+                price: 25,
+                stories: 30,
+                description: 'Best for regular studying',
+                features: [
+                  '30 stories per month',
+                  'All universes',
+                  'Interactive quizzes',
+                  'HD image generation',
+                  'Priority support'
+                ],
+                highlighted: true
+              },
+              {
+                name: 'Nerd',
+                price: 45,
+                stories: 50,
+                description: 'For serious learners',
+                features: [
+                  '50 stories per month',
+                  'All universes',
+                  'Interactive quizzes',
+                  'HD image generation',
+                  'Priority support',
+                  'Early access to features'
+                ],
+                highlighted: false
+              }
+            ].map((plan, index) => (
+              <motion.div
+                key={plan.name}
+                {...getAnimationProps({
+                  viewport: { once: true },
+                  transition: { delay: isMobile ? 0 : index * 0.1 }
+                })}
+                className={`relative p-8 rounded-3xl backdrop-blur-xl ${
+                  plan.highlighted
+                    ? 'bg-gradient-to-b from-red-600/20 to-red-900/10 border-2 border-red-600/50 shadow-[0_0_50px_rgba(220,38,38,0.3)]'
+                    : 'bg-white/5 border border-white/10'
+                }`}
+              >
+                {plan.highlighted && (
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-red-600 rounded-full text-xs font-semibold uppercase tracking-wider">
+                    Most Popular
+                  </div>
+                )}
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
+                    <p className="text-white/60 text-sm">{plan.description}</p>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-5xl font-bold text-white">${plan.price}</span>
+                    <span className="text-white/50 text-sm">/month</span>
+                  </div>
+                  <ul className="space-y-3">
+                    {plan.features.map((feature) => (
+                      <li key={feature} className="flex items-start gap-3 text-white/80 text-sm">
+                        <svg className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                  <motion.button
+                    whileHover={isMobile ? {} : { scale: 1.02 }}
+                    whileTap={isMobile ? {} : { scale: 0.98 }}
+                    onClick={() => {
+                      if (!authLoading && !user) {
+                        setAuthMode('signup');
+                        setAuthModalOpen(true);
+                      } else {
+                        // TODO: Redirect to Lemon Squeezy checkout
+                        console.log('Subscribe to', plan.name);
+                      }
+                    }}
+                    className={`w-full py-3 rounded-lg font-semibold transition-all ${
+                      plan.highlighted
+                        ? 'bg-red-600 hover:bg-red-700 text-white'
+                        : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
+                    }`}
+                  >
+                    Get Started
+                  </motion.button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <motion.div
+            {...getAnimationProps({ viewport: { once: true } })}
+            className="mt-12 text-center space-y-4"
+          >
+            <p className="text-white/50 text-sm">
+              All plans renew monthly. Cancel anytime from your settings.
+            </p>
+            <div className="flex flex-wrap justify-center gap-6 text-xs text-white/40">
+              <span>✓ No hidden fees</span>
+              <span>✓ Secure checkout</span>
+              <span>✓ Instant access</span>
+            </div>
+          </motion.div>
         </div>
       </section>
 

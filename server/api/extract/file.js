@@ -3,14 +3,6 @@ const fs = require('fs').promises;
 const pdfParse = require('pdf-parse');
 const { Readable } = require('stream');
 
-// Helper function to count words in text
-function countWords(text) {
-  if (!text || text.trim().length === 0) {
-    return 0;
-  }
-  return text.trim().split(/\s+/).filter(word => word.length > 0).length;
-}
-
 // Helper function to clean and format text
 function cleanText(text) {
   return text
@@ -82,9 +74,9 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'Only .txt and .pdf files are allowed' });
     }
     
-    // Validate file size (50MB limit)
-    if (buffer.length > 50 * 1024 * 1024) {
-      return res.status(400).json({ error: 'File size must be less than 50MB' });
+    // Validate file size (10MB limit)
+    if (buffer.length > 10 * 1024 * 1024) {
+      return res.status(400).json({ error: 'File size must be less than 10MB' });
     }
 
     let text = '';
@@ -99,19 +91,7 @@ module.exports = async (req, res) => {
     // Clean and format text
     text = cleanText(text);
 
-    // Check word count limit (15,000 words)
-    const wordCount = countWords(text);
-    const MAX_WORDS = 15000;
-    
-    if (wordCount > MAX_WORDS) {
-      return res.status(400).json({ 
-        error: `Dosya çok uzun. Maksimum 15.000 kelime kabul edilir. Dosyanızda ${wordCount.toLocaleString('tr-TR')} kelime var.`,
-        wordCount,
-        maxWords: MAX_WORDS
-      });
-    }
-
-    res.json({ text, wordCount });
+    res.json({ text });
   } catch (error) {
     console.error('File extraction error:', error);
     res.status(500).json({ error: 'Failed to extract text from file', message: error.message });

@@ -82,7 +82,7 @@ Navigate to [http://localhost:3000](http://localhost:3000)
 
 Choose one of three input methods:
 
-- **File**: Drag and drop a `.txt` or `.pdf` file (max 50MB)
+- **File**: Drag and drop a `.txt` or `.pdf` file (max 10MB)
 - **URL**: Paste a website URL to scrape text content
 - **YouTube**: Paste a YouTube video URL to extract transcript
 
@@ -260,7 +260,7 @@ const allowedTypes = ['.txt', '.pdf', '.docx']; // Add .docx
 
 ### "Failed to extract text"
 
-- Verify file is under 50MB
+- Verify file is under 10MB
 - For URLs, ensure the website is accessible
 - For YouTube, check the video has captions/transcript available
 

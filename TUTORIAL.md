@@ -266,7 +266,7 @@ E) Protect the cell
 - Check if concept was educational enough
 
 ### Upload failed?
-- Check file size (< 50MB)
+- Check file size (< 10MB)
 - Verify file type (.txt or .pdf)
 - Try copy-pasting content instead
 

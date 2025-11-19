@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/utils/supabase/client';
 import Header from '@/components/Header';
 import Loader from '@/components/Loader';
+import { getUserSubscription, UserSubscription, SUBSCRIPTION_PLANS } from '@/utils/subscription';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -17,6 +18,7 @@ export default function SettingsPage() {
   const [nickname, setNickname] = useState('');
   const [nicknameError, setNicknameError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
 
@@ -24,6 +26,7 @@ export default function SettingsPage() {
     if (!user) return;
 
     try {
+      // Fetch user profile
       const { data, error } = await supabase
         .from('user_profiles')
         .select('avatar_url, nickname')
@@ -39,6 +42,10 @@ export default function SettingsPage() {
         setAvatarUrl(data.avatar_url);
         setNickname(data.nickname || '');
       }
+
+      // Fetch subscription
+      const subscriptionData = await getUserSubscription(user.id);
+      setSubscription(subscriptionData);
     } catch (err) {
       console.error('Error:', err);
     } finally {
@@ -313,6 +320,97 @@ export default function SettingsPage() {
                 onChange={handleAvatarChange}
                 className="hidden"
               />
+            </div>
+
+            {/* Divider */}
+            <div className="border-t border-white/10" />
+
+            {/* Subscription Section */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold">Subscription</h2>
+              {subscription ? (
+                <div className="space-y-4">
+                  <div className="p-6 bg-gradient-to-b from-red-600/20 to-red-900/10 border border-red-600/50 rounded-2xl">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h3 className="text-2xl font-bold text-white capitalize">
+                          {subscription.plan_name}
+                        </h3>
+                        <p className="text-white/60 text-sm">
+                          ${SUBSCRIPTION_PLANS[subscription.plan_name].price}/month
+                        </p>
+                      </div>
+                      <div className="px-4 py-2 bg-green-600/20 border border-green-600/50 rounded-full">
+                        <span className="text-xs font-semibold uppercase tracking-wider text-green-400">
+                          Active
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-white/70 text-sm">Stories Used</span>
+                        <span className="text-white font-semibold">
+                          {subscription.stories_used} / {subscription.story_limit}
+                        </span>
+                      </div>
+
+                      {/* Progress Bar */}
+                      <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-red-500 to-orange-500 transition-all"
+                          style={{
+                            width: `${(subscription.stories_used / subscription.story_limit) * 100}%`
+                          }}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between pt-2">
+                        <span className="text-white/70 text-sm">Stories Remaining</span>
+                        <span className="text-white font-semibold">
+                          {subscription.stories_remaining}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span className="text-white/70 text-sm">Renews On</span>
+                        <span className="text-white font-semibold">
+                          {new Date(subscription.subscription_end_date).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-white/50 text-center">
+                    Your subscription will automatically renew. Manage billing on{' '}
+                    <a
+                      href="https://app.lemonsqueezy.com/my-orders"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-red-400 hover:text-red-300 underline"
+                    >
+                      Lemon Squeezy
+                    </a>
+                  </p>
+                </div>
+              ) : (
+                <div className="p-6 bg-white/5 border border-white/10 rounded-2xl text-center space-y-4">
+                  <p className="text-white/70">You don't have an active subscription</p>
+                  <button
+                    onClick={() => {
+                      const pricingSection = document.getElementById('pricing');
+                      if (pricingSection) {
+                        router.push('/#pricing');
+                      } else {
+                        router.push('/');
+                      }
+                    }}
+                    className="netflix-button"
+                  >
+                    View Plans
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Divider */}

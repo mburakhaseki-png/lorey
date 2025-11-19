@@ -8,9 +8,6 @@
   html {
     background: #000000;
     background-attachment: fixed;
-    overflow-x: hidden;
-    width: 100%;
-    max-width: 100vw;
   }
 
   body {
@@ -19,14 +16,6 @@
     background: transparent !important;
     position: relative;
     overflow-x: hidden;
-    width: 100%;
-    max-width: 100vw;
-  }
-
-  /* Prevent horizontal scroll on mobile */
-  * {
-    max-width: 100%;
-    box-sizing: border-box;
   }
 
   h1, h2, h3, h4, h5, h6 {

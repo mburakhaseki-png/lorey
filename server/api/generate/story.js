@@ -477,49 +477,37 @@ CRITICAL RULES FOR IMAGE PROMPTS:
 - DO NOT SKIP indices 3, 6, 9, 12, 15, 18... - they ALL need imagePrompts!
 - If you generate 14 paragraphs, you MUST have imagePrompts at indices [0, 3, 6, 9, 12] = 5 images
 
-CHARACTER DESCRIPTION (MANDATORY - EXTREME DETAIL):
-- ⚠️ CRITICAL: In EVERY imagePrompt, describe main characters in COMPLETE DETAIL:
-  * FACE: Eye color, eye shape, facial hair, skin tone, facial expression, distinctive features (scars, marks, etc.)
-  * HAIR: Color, style, length, texture (e.g., "messy black hair", "wild gray spiky hair", "long blonde braided hair")
-  * CLOTHING: Complete outfit description - shirt/jacket color and style, pants/skirt color and style, shoes, accessories
-  * BODY TYPE: Height, build (if relevant to character recognition)
-  * ACCESSORIES: Glasses, jewelry, weapons, tools, signature items
-- Examples of COMPLETE character descriptions:
-  * Rick and Morty: "Rick Sanchez, tall elderly man with wild gray spiky hair, blue eyes, wrinkled face, white lab coat stained with unknown substances, blue pants, black shoes, brown belt, holding his portal gun"
-  * Harry Potter: "Harry Potter, teenage boy with messy black hair, bright green eyes, round glasses, lightning bolt scar on forehead, pale skin, Gryffindor red and gold robes, black pants, holding wooden wand"
-  * Regular Show: "Mordecai, tall blue jay bird with bright blue feathers on head and body, white chest feathers, black tail feathers, orange beak, wearing white button-up shirt, blue jeans"
-- ⚠️ IMPORTANT: Always describe the MAIN character(s) first, then the scene
+CHARACTER CONSISTENCY RULES (CRITICAL):
+- Describe EACH main character's physical appearance in FULL DETAIL for EVERY image they appear in
+- Include: gender, hair color/style, eye color, facial features, clothing colors, accessories
+- Examples:
+  * Rick and Morty universe: "Rick Sanchez, elderly man with wild gray spiky hair, unibrow, white lab coat stained with unknown substances, blue pants, black shoes, brown belt, holding his portal gun. Morty Smith, young teenage boy with short brown hair, yellow shirt, blue jeans, white sneakers, anxious expression"
+  * Harry Potter universe: "Harry Potter, teenage boy with messy black hair, round glasses, lightning bolt scar on forehead, Gryffindor red and gold robes, holding wooden wand"
+  * Regular Show universe: "Mordecai, tall blue jay bird with blue feathers, white chest, black tail feathers, wearing white shirt"
+- CHARACTER UNIQUENESS RULE: Each character should appear EXACTLY ONCE per image
+  * ❌ WRONG: "Rick and Rick and Morty" or "2 Mortys" or "multiple Ricks"
+  * ✅ CORRECT: "Rick Sanchez [full description] and Morty Smith [full description]" - each character appears once
+- Keep character descriptions IDENTICAL across all images for consistency (same hair color, same clothing, same features)
 
-SCENE COMPLEXITY RULES (MANDATORY):
-- ⚠️ AVOID COMPLEX SCENES: Keep scenes SIMPLE and FOCUSED
-  * Focus on 1-2 main characters maximum
-  * Avoid crowded scenes with many characters
-  * Avoid complex multi-layered backgrounds
-  * Avoid scenes with too many objects or details competing for attention
-- ⚠️ CHARACTER COUNT LIMIT:
-  * MAXIMUM 2 characters per scene
-  * If story involves multiple characters, focus on the main protagonist(s)
-  * Background characters should be minimal or blurred
-- ⚠️ SCENE SIMPLICITY:
-  * Choose clear, single-focus moments from the story
-  * Avoid busy action scenes with multiple things happening
-  * Prefer character-focused moments over complex action sequences
-  * Simple backgrounds that don't distract from characters
+SCENE SIMPLICITY RULES (CRITICAL):
+- CREATE SIMPLE, FOCUSED SCENES with 1-3 main characters maximum
+- AVOID complex group shots, crowd scenes, or busy compositions
+- Focus on THE KEY MOMENT that tells the story directly
+- Examples:
+  * ❌ WRONG: "Rick, Morty, Summer, Beth, Jerry, and aliens in a crowded spaceship with multiple portals and explosions"
+  * ✅ CORRECT: "Rick Sanchez [full description] showing a glowing formula to Morty Smith [full description] in a simple laboratory with one green portal in background"
+- Keep backgrounds SIMPLE and relevant to the scene
+- Prioritize CLARITY over complexity
 
-ART STYLE (MANDATORY):
+ART STYLE SPECIFICATION:
 - ALWAYS specify the art style matching the universe:
   * Rick and Morty: "2D animated art style from Rick and Morty show"
   * Harry Potter: "Realistic cinematic style, live-action movie quality"
   * Regular Show: "2D cartoon animation style from Regular Show"
   * Avatar The Last Airbender: "2D animated art style from Avatar series"
   * Star Wars: "Realistic sci-fi cinematic style"
-- Always end with: "high quality, detailed, [art style of universe]"
-
-SCENE COMPOSITION:
-- Make scenes FUN, DYNAMIC, and directly related to the story moment
-- Include environment details, lighting, mood, and action
-- Focus on character expressions and body language
-- Keep composition simple: main character(s) in foreground, simple background`;
+- Include environment details, lighting, and mood
+- Always end with: "high quality, detailed, [art style of universe]"`;
 
     const userPrompt = `You are creating an episode of ${universe} that teaches this content:
 

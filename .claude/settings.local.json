@@ -15,7 +15,9 @@
       "Bash(npm install:*)",
       "Bash(dir /S /B generate 2)",
       "Bash(nul)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(app/page.tsx)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
