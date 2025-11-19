@@ -258,11 +258,24 @@ export default function StoryPage() {
   // Image at index X covers paragraphs X, X+1, X+2 (3 paragraphs)
   // So: image 0 covers 0-2, image 3 covers 3-5, image 6 covers 6-8, etc.
   useEffect(() => {
-    if (!storyData || !storyContentRef.current) return;
+    if (!storyData || !storyContentRef.current) {
+      console.log('⚠️ Scroll listener: storyData or storyContentRef missing');
+      return;
+    }
 
     const updateActiveImage = () => {
-      const paragraphs = storyContentRef.current?.querySelectorAll('[data-paragraph-index]');
-      if (!paragraphs || paragraphs.length === 0) return;
+      if (!storyContentRef.current) {
+        console.log('⚠️ Scroll listener: storyContentRef.current is null');
+        return;
+      }
+
+      const paragraphs = storyContentRef.current.querySelectorAll('[data-paragraph-index]');
+      console.log(`📊 Found ${paragraphs.length} paragraphs`);
+      
+      if (paragraphs.length === 0) {
+        console.log('⚠️ No paragraphs found');
+        return;
+      }
 
       const viewportCenter = window.innerHeight / 2;
       let activeParagraphIndex = 0;
@@ -273,10 +286,11 @@ export default function StoryPage() {
         const rect = paragraph.getBoundingClientRect();
         const paragraphCenter = rect.top + rect.height / 2;
         const distance = Math.abs(viewportCenter - paragraphCenter);
+        const index = parseInt(paragraph.getAttribute('data-paragraph-index') || '0');
 
         if (distance < minDistance) {
           minDistance = distance;
-          activeParagraphIndex = parseInt(paragraph.getAttribute('data-paragraph-index') || '0');
+          activeParagraphIndex = index;
         }
       });
 
@@ -286,30 +300,29 @@ export default function StoryPage() {
       // Paragraphs 6,7,8 → image 6
       const imageIndex = Math.floor(activeParagraphIndex / 3) * 3;
 
+      console.log(`🖼️ Scroll update: Paragraph ${activeParagraphIndex} visible → image index ${imageIndex}, current activeImageIndex: ${activeImageIndex}`);
+
       setActiveImageIndex((prev) => {
         if (prev !== imageIndex) {
-          console.log(`🖼️ Paragraph ${activeParagraphIndex} visible → showing image at index ${imageIndex}`);
+          console.log(`✅ Changing image from index ${prev} to ${imageIndex}`);
           return imageIndex;
         }
         return prev;
       });
     };
 
-    // Set initial active image
-    const timeoutId = setTimeout(() => {
-      updateActiveImage();
-    }, 300);
+    // Set initial active image immediately
+    updateActiveImage();
 
-    // Throttle scroll events for better performance
-    let ticking = false;
+    // Also set after a delay to ensure DOM is ready
+    const timeoutId = setTimeout(() => {
+      console.log('⏰ Initial image update after timeout');
+      updateActiveImage();
+    }, 500);
+
+    // Add scroll listener - NO throttling for immediate response
     const handleScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          updateActiveImage();
-          ticking = false;
-        });
-        ticking = true;
-      }
+      updateActiveImage();
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -320,7 +333,7 @@ export default function StoryPage() {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleScroll);
     };
-  }, [storyData]);
+  }, [storyData, activeImageIndex]);
 
   const handleQuizRegenerate = (index: number) => (newQuiz: QuizType) => {
     setStoryData((prevData) => {
@@ -368,17 +381,23 @@ export default function StoryPage() {
   }
 
   // Get current active image URL - activeImageIndex is already the image index (0, 3, 6, 9...)
-  const safeImageIndex = activeImageIndex < storyData.story.length ? activeImageIndex : 0;
-  const currentImageUrl = storyData.story[safeImageIndex]?.imageUrl || null;
-  const currentImagePrompt = storyData.story[safeImageIndex]?.imagePrompt || null;
+  const safeImageIndex = storyData && activeImageIndex < storyData.story.length ? activeImageIndex : (storyData ? 0 : -1);
+  const currentImageUrl = storyData && safeImageIndex >= 0 ? storyData.story[safeImageIndex]?.imageUrl || null : null;
+  const currentImagePrompt = storyData && safeImageIndex >= 0 ? storyData.story[safeImageIndex]?.imagePrompt || null : null;
   
   // Debug: Log current image status
   useEffect(() => {
-    if (storyData && safeImageIndex < storyData.story.length) {
+    if (storyData && safeImageIndex >= 0 && safeImageIndex < storyData.story.length) {
       const paragraph = storyData.story[safeImageIndex];
-      console.log(`🖼️ Current image status - Index: ${safeImageIndex}, Has URL: ${!!paragraph?.imageUrl}, URL: ${paragraph?.imageUrl?.substring(0, 50) || 'null'}...`);
+      console.log(`🖼️ RENDER: activeImageIndex=${activeImageIndex}, safeImageIndex=${safeImageIndex}, Has URL: ${!!paragraph?.imageUrl}, URL: ${paragraph?.imageUrl?.substring(0, 50) || 'null'}...`);
+      
+      // Log all images for debugging
+      const allImages = storyData.story
+        .map((p: any, idx: number) => ({ index: idx, hasUrl: !!p.imageUrl, url: p.imageUrl?.substring(0, 30) || 'null' }))
+        .filter((item: any) => item.index % 3 === 0);
+      console.log('📸 All images:', allImages);
     }
-  }, [safeImageIndex, storyData]);
+  }, [activeImageIndex, safeImageIndex, storyData]);
 
   return (
     <>
