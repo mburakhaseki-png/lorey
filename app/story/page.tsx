@@ -122,11 +122,17 @@ export default function StoryPage() {
     setIsGeneratingImages(true);
 
     let generatedCount = 0;
+    // Keep track of updated story data as we generate images
+    let currentStoryData = { ...data };
+    currentStoryData.story = [...data.story];
 
     for (let i = 0; i < data.story.length; i += 3) {
       const paragraph = data.story[i];
 
-      if (!paragraph.imagePrompt || paragraph.imagePrompt === null || paragraph.imageUrl) {
+      // Skip if no imagePrompt or if imageUrl already exists
+      const hasImageUrl = paragraph.imageUrl && paragraph.imageUrl !== '' && paragraph.imageUrl !== null && paragraph.imageUrl !== undefined;
+      if (!paragraph.imagePrompt || paragraph.imagePrompt === null || hasImageUrl) {
+        console.log(`⏭️ Skipping paragraph ${i} - ${hasImageUrl ? 'image already exists' : 'no imagePrompt'}`);
         continue;
       }
 
@@ -156,27 +162,45 @@ export default function StoryPage() {
             universe: universeContext,
           });
 
-          if (response.data?.imageUrl) {
-            const updatedStory = { ...data };
-            updatedStory.story[i] = { ...updatedStory.story[i], imageUrl: response.data.imageUrl };
-            setStoryData(updatedStory);
+          if (response.data?.imageUrl && response.data.imageUrl !== '') {
+            const newImageUrl = response.data.imageUrl;
+            
+            // Update local copy of story data
+            currentStoryData.story[i] = { ...currentStoryData.story[i], imageUrl: newImageUrl };
+            
+            // Update state using functional update to ensure we have the latest state
+            setStoryData((prevData) => {
+              if (!prevData) return prevData;
+              const updatedStory = { ...prevData };
+              updatedStory.story = [...updatedStory.story];
+              updatedStory.story[i] = { ...updatedStory.story[i], imageUrl: newImageUrl };
+              console.log(`✅ State updated for paragraph ${i} with imageUrl`);
+              return updatedStory;
+            });
             
             // Update in Supabase if story ID exists
             const storyId = sessionStorage.getItem('storyId');
             if (storyId && user) {
               try {
-                await supabase
+                const { error } = await supabase
                   .from('stories')
                   .update({
-                    story_data: updatedStory,
+                    story_data: currentStoryData,
                   })
                   .eq('id', storyId);
+                
+                if (error) {
+                  console.error('❌ Error updating story in database:', error);
+                } else {
+                  console.log(`✅ Story updated in database for paragraph ${i} with imageUrl`);
+                }
               } catch (err: any) {
-                console.error('Error updating story in database:', err);
+                console.error('❌ Error updating story in database:', err);
               }
             }
+            
             imageGenerated = true;
-            console.log(`✅ Image generated successfully for paragraph ${i} (attempt ${retryAttempt})`);
+            console.log(`✅ Image generated successfully for paragraph ${i}: ${newImageUrl.substring(0, 50)}...`);
           } else {
             throw new Error('No imageUrl in response');
           }
@@ -191,7 +215,7 @@ export default function StoryPage() {
 
     console.log(`✅ Image generation complete! Generated ${generatedCount} images`);
     setIsGeneratingImages(false);
-  }, []);
+  }, [user, supabase]);
 
   useEffect(() => {
     if (imageGenerationStarted.current) return;
@@ -236,51 +260,69 @@ export default function StoryPage() {
     }
   }, [router, generateImages]);
 
-  // Update active image based on scroll position (throttled for better performance)
+  // Update active image based on scroll position using Intersection Observer
   useEffect(() => {
-    if (!storyData) return;
+    if (!storyData || !storyContentRef.current) return;
 
-    let ticking = false;
-
-    const handleScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          if (!storyContentRef.current) {
-            ticking = false;
-            return;
-          }
-
-          const paragraphs = storyContentRef.current.querySelectorAll('[data-paragraph-index]');
-          const scrollPosition = window.scrollY + window.innerHeight / 2;
-
-          for (let i = 0; i < paragraphs.length; i++) {
-            const element = paragraphs[i] as HTMLElement;
-            const rect = element.getBoundingClientRect();
-            const elementTop = rect.top + window.scrollY;
-            const elementBottom = elementTop + rect.height;
-
-            if (scrollPosition >= elementTop && scrollPosition < elementBottom) {
-              const paragraphIndex = parseInt(element.getAttribute('data-paragraph-index') || '0');
-              const imageIndex = Math.floor(paragraphIndex / 3) * 3;
+    // Use a small delay to ensure DOM is ready
+    const timeoutId = setTimeout(() => {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          // Find the entry with the highest intersection ratio (most visible)
+          let mostVisible: { index: number; ratio: number } | null = null;
+          
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              const index = parseInt(entry.target.getAttribute('data-paragraph-index') || '0');
+              // Find the image index for this paragraph (images are at 0, 3, 6, 9...)
+              const imageIndex = Math.floor(index / 3) * 3;
               
-              if (imageIndex < storyData.story.length && imageIndex !== activeImageIndex) {
-                setActiveImageIndex(imageIndex);
+              if (!mostVisible || entry.intersectionRatio > mostVisible.ratio) {
+                mostVisible = { index: imageIndex, ratio: entry.intersectionRatio };
               }
-              ticking = false;
-              return;
             }
+          });
+
+          if (mostVisible) {
+            setActiveImageIndex((prev) => {
+              if (prev !== mostVisible!.index) {
+                console.log(`🖼️ Active image changed to index ${mostVisible!.index} (paragraph ${mostVisible!.index})`);
+                return mostVisible!.index;
+              }
+              return prev;
+            });
           }
-          ticking = false;
-        });
-        ticking = true;
+        },
+        {
+          root: storyContentRef.current, // Use scroll container
+          // Trigger when element is in the middle 40% of viewport
+          rootMargin: '-30% 0px -30% 0px',
+          threshold: [0, 0.1, 0.25, 0.5, 0.75, 1]
+        }
+      );
+
+      // Observe all paragraph sections
+      const paragraphs = document.querySelectorAll('[data-paragraph-index]');
+      console.log(`📊 Observing ${paragraphs.length} paragraphs`);
+      
+      if (paragraphs.length > 0) {
+        paragraphs.forEach((p) => observer.observe(p));
+        
+        // Set initial active image
+        const firstParagraph = paragraphs[0];
+        const firstIndex = parseInt(firstParagraph.getAttribute('data-paragraph-index') || '0');
+        const firstImageIndex = Math.floor(firstIndex / 3) * 3;
+        console.log(`🖼️ Setting initial active image to index ${firstImageIndex}`);
+        setActiveImageIndex(firstImageIndex);
       }
+
+      return () => observer.disconnect();
+    }, 200);
+
+    return () => {
+      clearTimeout(timeoutId);
     };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll(); // Initial call
-
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [storyData, activeImageIndex]);
+  }, [storyData]);
 
   const handleQuizRegenerate = (index: number) => (newQuiz: QuizType) => {
     setStoryData((prevData) => {
@@ -369,7 +411,7 @@ export default function StoryPage() {
           <div className="h-full flex items-center justify-center p-6 xl:p-8">
             {currentImageUrl ? (
               <motion.div
-                key={safeImageIndex}
+                key={`image-${safeImageIndex}-${currentImageUrl.substring(0, 20)}`}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5 }}
@@ -389,7 +431,7 @@ export default function StoryPage() {
                     />
                     <div className="absolute top-4 left-4 z-20">
                       <span className="episode-badge text-xs">
-                        EPISODE {safeImageIndex + 1}
+                        EPISODE {Math.floor(safeImageIndex / 3) + 1}
                       </span>
                     </div>
                   </div>
