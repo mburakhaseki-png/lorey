@@ -85,10 +85,15 @@ export default function StoryPage() {
             currentStoryData.story[i] = { ...currentStoryData.story[i], imageUrl: newImageUrl };
             
             setStoryData((prevData) => {
-              if (!prevData) return prevData;
+              if (!prevData) {
+                console.log(`⚠️ setStoryData: prevData is null for paragraph ${i}`);
+                return prevData;
+              }
               const updatedStory = { ...prevData };
               updatedStory.story = [...updatedStory.story];
               updatedStory.story[i] = { ...updatedStory.story[i], imageUrl: newImageUrl };
+              console.log(`✅ State updated: paragraph ${i} now has imageUrl: ${newImageUrl.substring(0, 50)}...`);
+              console.log(`📸 Updated story has ${updatedStory.story.length} paragraphs`);
               return updatedStory;
             });
             
