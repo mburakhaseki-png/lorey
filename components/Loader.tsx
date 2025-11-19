@@ -81,6 +81,7 @@ function SnakeGame() {
 
   const { user } = useAuth();
   const supabase = createClient();
+  const [isStarted, setIsStarted] = useState(false);
   const [snake, setSnake] = useState(INITIAL_SNAKE);
   const [direction, setDirection] = useState(INITIAL_DIRECTION);
   const [food, setFood] = useState(() => {
@@ -227,7 +228,7 @@ function SnakeGame() {
 
   // Game loop
   useEffect(() => {
-    if (gameOver) return;
+    if (gameOver || !isStarted) return;
 
     const moveSnake = () => {
       setSnake((prevSnake) => {
@@ -308,42 +309,60 @@ function SnakeGame() {
     }
   }, [gameOver, generateFood]);
 
+  const handleStartGame = () => {
+    setIsStarted(true);
+  };
+
   return (
-    <div className="flex flex-col items-center gap-6">
-      {/* Score Display */}
-      <div className="flex items-center gap-6">
-        <motion.div
-          initial={{ scale: justAte ? 1.2 : 1 }}
-          animate={{ scale: justAte ? 1.2 : 1 }}
-          className="px-6 py-3 bg-gradient-to-r from-red-600/20 to-orange-600/20 border border-red-500/30 rounded-full backdrop-blur-sm text-center"
-        >
-          <div className="text-white/90 text-sm font-semibold">Score</div>
-          <div className="text-red-400 text-2xl font-bold flex items-center justify-center">{score}</div>
-        </motion.div>
-        {!loadingHighScore && highScore !== null && (
-          <div className="px-6 py-3 bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/30 rounded-full backdrop-blur-sm text-center">
-            <div className="text-white/70 text-xs font-semibold">Best</div>
-            <div className="text-purple-400 text-xl font-bold flex items-center justify-center">{highScore}</div>
+    <div className="flex flex-col items-center gap-4">
+      {/* Score Display - Simplified */}
+      {isStarted && (
+        <div className="flex items-center gap-4">
+          <div className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-center">
+            <div className="text-white/70 text-xs">Score</div>
+            <div className="text-red-400 text-xl font-bold">{score}</div>
           </div>
-        )}
-        {/* Sound Toggle Button */}
-        <button
-          onClick={toggleSound}
-          className="px-4 py-3 bg-gradient-to-r from-blue-600/20 to-cyan-600/20 border border-blue-500/30 rounded-full backdrop-blur-sm hover:from-blue-600/30 hover:to-cyan-600/30 transition-all"
-          title={soundEnabled ? 'Disable sound' : 'Enable sound'}
-        >
-          {soundEnabled ? (
-            <svg className="w-6 h-6 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.793L4.617 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.617l3.766-3.793a1 1 0 011.617.793zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clipRule="evenodd" />
-            </svg>
-          ) : (
-            <svg className="w-6 h-6 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.793L4.617 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.617l3.766-3.793a1 1 0 011.617.793zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clipRule="evenodd" />
-              <path d="M3.28 2.22a.75.75 0 00-1.06 1.06l14.5 14.5a.75.75 0 101.06-1.06l-14.5-14.5z" />
-            </svg>
+          {!loadingHighScore && highScore !== null && (
+            <div className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-center">
+              <div className="text-white/60 text-xs">Best</div>
+              <div className="text-purple-400 text-lg font-bold">{highScore}</div>
+            </div>
           )}
-        </button>
-      </div>
+          <button
+            onClick={toggleSound}
+            className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition-all"
+            title={soundEnabled ? 'Disable sound' : 'Enable sound'}
+          >
+            {soundEnabled ? (
+              <svg className="w-5 h-5 text-white/70" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.793L4.617 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.617l3.766-3.793a1 1 0 011.617.793zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clipRule="evenodd" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5 text-white/70" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.793L4.617 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.617l3.766-3.793a1 1 0 011.617.793zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clipRule="evenodd" />
+                <path d="M3.28 2.22a.75.75 0 00-1.06 1.06l14.5 14.5a.75.75 0 101.06-1.06l-14.5-14.5z" />
+              </svg>
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* Start Button - Show before game starts */}
+      {!isStarted && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center gap-4"
+        >
+          <button
+            onClick={handleStartGame}
+            className="px-8 py-4 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold text-lg rounded-lg shadow-lg transition-all transform hover:scale-105 active:scale-95"
+          >
+            Start Game
+          </button>
+          <p className="text-white/50 text-sm">Press to start playing</p>
+        </motion.div>
+      )}
 
       {/* Game Board */}
       <motion.div
@@ -354,6 +373,7 @@ function SnakeGame() {
         style={{
           width: GRID_SIZE * CELL_SIZE + 8,
           height: GRID_SIZE * CELL_SIZE + 8,
+          opacity: isStarted ? 1 : 0.5,
         }}
       >
         {/* Outer Glow */}
@@ -467,17 +487,17 @@ function SnakeGame() {
         </div>
       </motion.div>
 
-      {/* Controls Hint */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        className="flex items-center gap-2 text-white/50 text-xs"
-      >
-        <div className="px-3 py-1 bg-white/5 border border-white/10 rounded-lg">↑↓←→</div>
-        <span>or</span>
-        <div className="px-3 py-1 bg-white/5 border border-white/10 rounded-lg">W A S D</div>
-      </motion.div>
+      {/* Controls Hint - Simplified */}
+      {isStarted && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="text-white/40 text-xs text-center"
+        >
+          Use ↑↓←→ or W A S D to play
+        </motion.div>
+      )}
     </div>
   );
 }
@@ -520,11 +540,22 @@ export function FullPageLoader({ message = 'Loading...', showSnake = false }: Lo
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="text-center px-4"
+        className="text-center px-4 flex flex-col items-center gap-3"
       >
-        <p className="text-lg font-medium text-white/90">{message}</p>
+        <div className="flex items-center gap-3">
+          {/* Loading Spinner */}
+          <motion.div
+            className="w-6 h-6 border-4 border-red-600/30 border-t-red-600 rounded-full"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
+          />
+          {/* Message Text */}
+          <p className="text-2xl md:text-3xl font-black text-red-600 tracking-tight">
+            {message}
+          </p>
+        </div>
         {showAdditionalMessage && (
-          <p className="text-sm text-white/60 mt-2">
+          <p className="text-sm text-white/60 mt-2 max-w-md">
             (This takes about 2 minutes on average, so I've prepared a game for you to keep you entertained :D)
           </p>
         )}
