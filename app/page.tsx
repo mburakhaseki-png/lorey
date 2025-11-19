@@ -642,6 +642,7 @@ export default function HomePage() {
             {[
               {
                 name: 'Slacker',
+                planKey: 'slacker',
                 price: 15,
                 stories: 10,
                 description: 'Perfect for casual learners',
@@ -655,6 +656,7 @@ export default function HomePage() {
               },
               {
                 name: 'Student',
+                planKey: 'student',
                 price: 25,
                 stories: 30,
                 description: 'Best for regular studying',
@@ -669,6 +671,7 @@ export default function HomePage() {
               },
               {
                 name: 'Nerd',
+                planKey: 'nerd',
                 price: 45,
                 stories: 50,
                 description: 'For serious learners',
@@ -730,10 +733,11 @@ export default function HomePage() {
                       } else {
                         try {
                           setIsCheckoutLoading(true);
+                          console.log('🛒 Checkout request:', { planName: plan.name, planKey: plan.planKey });
                           const response = await fetch('/api/subscription/create-checkout', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ planName: plan.name.toLowerCase() })
+                            body: JSON.stringify({ planName: plan.planKey })
                           });
 
                           const data = await response.json();
