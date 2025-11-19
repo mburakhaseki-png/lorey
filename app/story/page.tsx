@@ -141,13 +141,20 @@ export default function StoryPage() {
       setUniverse(storedUniverse);
       setIsLoading(false);
 
-      const needsImageGeneration = data.story.some((p: any, idx: number) =>
-        idx % 3 === 0 && p.imagePrompt && p.imagePrompt !== null && !p.imageUrl
-      );
+      // Check if images need to be generated - more strict check
+      const needsImageGeneration = data.story.some((p: any, idx: number) => {
+        if (idx % 3 !== 0) return false;
+        if (!p.imagePrompt || p.imagePrompt === null) return false;
+        const hasImageUrl = p.imageUrl && p.imageUrl !== '' && p.imageUrl !== null && p.imageUrl !== undefined;
+        return !hasImageUrl;
+      });
 
       if (needsImageGeneration) {
+        console.log('🎨 Some images missing, starting image generation');
         imageGenerationStarted.current = true;
         generateImages(data, storedUniverse);
+      } else {
+        console.log('✅ All images already generated, skipping');
       }
     } catch (err) {
       console.error('Failed to load story data:', err);
@@ -203,11 +210,9 @@ export default function StoryPage() {
       // Calculate image index: paragraphs 0,1,2 → image 0, paragraphs 3,4,5 → image 3, etc.
       const imageIndex = Math.floor(closestIndex / 3) * 3;
 
-      console.log(`🖼️ Scroll update: Paragraph ${closestIndex} → Image ${imageIndex}, current activeImageIndex: ${activeImageIndex}`);
-
       setActiveImageIndex((prev) => {
         if (prev !== imageIndex) {
-          console.log(`✅ Changing image from index ${prev} to ${imageIndex}`);
+          console.log(`🖼️ Scroll: Paragraph ${closestIndex} → Image ${imageIndex} (was ${prev})`);
           return imageIndex;
         }
         return prev;
