@@ -167,9 +167,7 @@ export default function StoryPage() {
 
   // Update active image based on scroll position
   useEffect(() => {
-    if (!storyData || !storyContentRef.current) {
-      return;
-    }
+    if (!storyData) return;
 
     const updateActiveImage = () => {
       if (!storyContentRef.current) return;
@@ -205,19 +203,15 @@ export default function StoryPage() {
       });
     };
 
-    // Initial update
-    const timeoutId = setTimeout(updateActiveImage, 300);
+    // Initial update after DOM is ready
+    const timeoutId = setTimeout(updateActiveImage, 500);
 
     // Scroll listener
-    const handleScroll = () => {
-      updateActiveImage();
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('scroll', updateActiveImage, { passive: true });
 
     return () => {
       clearTimeout(timeoutId);
-      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('scroll', updateActiveImage);
     };
   }, [storyData]);
 
