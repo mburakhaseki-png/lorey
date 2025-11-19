@@ -224,7 +224,11 @@ export default function StoryDetailPage() {
         if (needsImageGeneration) {
           console.log('🖼️ Some images are missing, generating them...');
           // Use the loaded data directly, don't pass through state
-          generateImages(loadedStoryData, data.universe);
+          // Don't await - let it run in background
+          generateImages(loadedStoryData, data.universe).catch((err) => {
+            console.error('❌ Error during image generation:', err);
+            setError('Some images failed to generate. Please refresh the page.');
+          });
         } else {
           console.log('✅ All images are already generated and saved - no regeneration needed');
         }
@@ -245,35 +249,63 @@ export default function StoryDetailPage() {
   useEffect(() => {
     if (!storyData) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const index = parseInt(entry.target.getAttribute('data-paragraph-index') || '0');
-            const imageIndex = Math.floor(index / 3) * 3;
-            
-            // Only update if changed
+    // Use a small delay to ensure DOM is ready
+    const timeoutId = setTimeout(() => {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          // Find the entry with the highest intersection ratio (most visible)
+          let mostVisible: { index: number; ratio: number } | null = null;
+          
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              const index = parseInt(entry.target.getAttribute('data-paragraph-index') || '0');
+              const imageIndex = Math.floor(index / 3) * 3;
+              
+              if (!mostVisible || entry.intersectionRatio > mostVisible.ratio) {
+                mostVisible = { index: imageIndex, ratio: entry.intersectionRatio };
+              }
+            }
+          });
+
+          if (mostVisible) {
             setActiveImageIndex((prev) => {
-              if (prev !== imageIndex) {
-                return imageIndex;
+              if (prev !== mostVisible!.index) {
+                console.log(`🖼️ Active image changed to index ${mostVisible!.index}`);
+                return mostVisible!.index;
               }
               return prev;
             });
           }
-        });
-      },
-      {
-        // Trigger when element is in the middle of the viewport
-        rootMargin: '-40% 0px -40% 0px',
-        threshold: 0
+        },
+        {
+          root: null, // Use viewport instead of container
+          // Trigger when element is in the middle 60% of viewport
+          rootMargin: '-20% 0px -20% 0px',
+          threshold: [0, 0.1, 0.25, 0.5, 0.75, 1]
+        }
+      );
+
+      // Observe all paragraph sections
+      const paragraphs = document.querySelectorAll('[data-paragraph-index]');
+      console.log(`📊 Observing ${paragraphs.length} paragraphs`);
+      
+      if (paragraphs.length > 0) {
+        paragraphs.forEach((p) => observer.observe(p));
+        
+        // Set initial active image
+        const firstParagraph = paragraphs[0];
+        const firstIndex = parseInt(firstParagraph.getAttribute('data-paragraph-index') || '0');
+        const firstImageIndex = Math.floor(firstIndex / 3) * 3;
+        console.log(`🖼️ Setting initial active image to index ${firstImageIndex}`);
+        setActiveImageIndex(firstImageIndex);
       }
-    );
 
-    // Observe all paragraph sections
-    const paragraphs = document.querySelectorAll('[data-paragraph-index]');
-    paragraphs.forEach((p) => observer.observe(p));
+      return () => observer.disconnect();
+    }, 100);
 
-    return () => observer.disconnect();
+    return () => {
+      clearTimeout(timeoutId);
+    };
   }, [storyData]);
 
   if (isLoading) {
@@ -293,9 +325,9 @@ export default function StoryDetailPage() {
     );
   }
 
-  // Get current active image URL - ensure index is valid
+  // Get current active image URL - use getImageUrl to find the correct image for the active paragraph
   const safeImageIndex = activeImageIndex < storyData.story.length ? activeImageIndex : 0;
-  const currentImageUrl = storyData.story[safeImageIndex]?.imageUrl || null;
+  const currentImageUrl = getImageUrl(safeImageIndex);
   const currentImagePrompt = storyData.story[safeImageIndex]?.imagePrompt || null;
 
   return (
