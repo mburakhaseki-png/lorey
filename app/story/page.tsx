@@ -105,10 +105,10 @@ export default function StoryPage() {
     });
   };
 
-  const generateImages = useCallback(async (data: StoryData, universeContext: string) => {
-    if (!data.story || data.story.length === 0) return;
+  const generateImages = useCallback(async (initialData: StoryData, universeContext: string) => {
+    if (!initialData.story || initialData.story.length === 0) return;
 
-    const paragraphsNeedingImages = data.story.filter((p, idx) =>
+    const paragraphsNeedingImages = initialData.story.filter((p, idx) =>
       idx % 3 === 0 && p.imagePrompt && p.imagePrompt !== null && !p.imageUrl
     );
 
@@ -122,11 +122,17 @@ export default function StoryPage() {
     setIsGeneratingImages(true);
 
     let generatedCount = 0;
+    // Keep track of updated story data as we generate images
+    let currentStoryData = { ...initialData };
+    currentStoryData.story = [...initialData.story];
 
-    for (let i = 0; i < data.story.length; i += 3) {
-      const paragraph = data.story[i];
+    for (let i = 0; i < initialData.story.length; i += 3) {
+      const paragraph = initialData.story[i];
 
-      if (!paragraph.imagePrompt || paragraph.imagePrompt === null || paragraph.imageUrl) {
+      // Skip if no imagePrompt or if imageUrl already exists
+      const hasImageUrl = paragraph.imageUrl && paragraph.imageUrl !== '' && paragraph.imageUrl !== null && paragraph.imageUrl !== undefined;
+      if (!paragraph.imagePrompt || paragraph.imagePrompt === null || hasImageUrl) {
+        console.log(`⏭️ Skipping paragraph ${i} - ${hasImageUrl ? 'image already exists' : 'no imagePrompt'}`);
         continue;
       }
 
@@ -156,27 +162,38 @@ export default function StoryPage() {
             universe: universeContext,
           });
 
-          if (response.data?.imageUrl) {
-            const updatedStory = { ...data };
-            updatedStory.story[i] = { ...updatedStory.story[i], imageUrl: response.data.imageUrl };
-            setStoryData(updatedStory);
+          if (response.data?.imageUrl && response.data.imageUrl !== '') {
+            const newImageUrl = response.data.imageUrl;
             
-            // Update in Supabase if story ID exists
+            // Update local copy first
+            currentStoryData.story[i] = { ...currentStoryData.story[i], imageUrl: newImageUrl };
+            
+            // Update state using functional update
+            setStoryData((prevData) => {
+              if (!prevData) return prevData;
+              const updatedStory = { ...prevData };
+              updatedStory.story = [...updatedStory.story];
+              updatedStory.story[i] = { ...updatedStory.story[i], imageUrl: newImageUrl };
+              return updatedStory;
+            });
+            
+            // Update in Supabase if story ID exists - use currentStoryData which is always up to date
             const storyId = sessionStorage.getItem('storyId');
             if (storyId && user) {
-              try {
-                await supabase
-                  .from('stories')
-                  .update({
-                    story_data: updatedStory,
-                  })
-                  .eq('id', storyId);
-              } catch (err: any) {
-                console.error('Error updating story in database:', err);
-              }
+              // Don't await - let it run in background
+              supabase
+                .from('stories')
+                .update({
+                  story_data: currentStoryData,
+                })
+                .eq('id', storyId)
+                .catch((err: any) => {
+                  console.error('Error updating story in database:', err);
+                });
             }
+            
             imageGenerated = true;
-            console.log(`✅ Image generated successfully for paragraph ${i} (attempt ${retryAttempt})`);
+            console.log(`✅ Image generated successfully for paragraph ${i}: ${newImageUrl.substring(0, 50)}...`);
           } else {
             throw new Error('No imageUrl in response');
           }
@@ -341,10 +358,18 @@ export default function StoryPage() {
     );
   }
 
-  // Get current active image URL - ensure index is valid
+  // Get current active image URL - activeImageIndex is already the image index (0, 3, 6, 9...)
   const safeImageIndex = activeImageIndex < storyData.story.length ? activeImageIndex : 0;
   const currentImageUrl = storyData.story[safeImageIndex]?.imageUrl || null;
   const currentImagePrompt = storyData.story[safeImageIndex]?.imagePrompt || null;
+  
+  // Debug: Log current image status
+  useEffect(() => {
+    if (storyData && safeImageIndex < storyData.story.length) {
+      const paragraph = storyData.story[safeImageIndex];
+      console.log(`🖼️ Current image status - Index: ${safeImageIndex}, Has URL: ${!!paragraph?.imageUrl}, URL: ${paragraph?.imageUrl?.substring(0, 50) || 'null'}...`);
+    }
+  }, [safeImageIndex, storyData]);
 
   return (
     <>
@@ -381,9 +406,9 @@ export default function StoryPage() {
         {/* Left: Sticky Full-Height Image (framed) */}
         <div className="hidden lg:block lg:w-1/2 lg:sticky lg:top-20 lg:h-[calc(100vh-5rem)] lg:overflow-hidden">
           <div className="h-full flex items-center justify-center p-6 xl:p-8">
-            {currentImageUrl ? (
+            {currentImageUrl && currentImageUrl !== '' ? (
               <motion.div
-                key={safeImageIndex}
+                key={`image-${safeImageIndex}-${currentImageUrl.substring(0, 20)}`}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5 }}
@@ -398,8 +423,12 @@ export default function StoryPage() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10 pointer-events-none" />
                     <img
                       src={currentImageUrl}
-                      alt={currentImagePrompt || `Scene ${safeImageIndex + 1}`}
+                      alt={currentImagePrompt || `Scene ${Math.floor(safeImageIndex / 3) + 1}`}
                       className="w-full h-full object-contain"
+                      onError={(e) => {
+                        console.error(`❌ Image failed to load: ${currentImageUrl}`);
+                        e.currentTarget.style.display = 'none';
+                      }}
                     />
                     <div className="absolute top-4 left-4 z-20">
                       <span className="episode-badge text-xs">
@@ -410,16 +439,23 @@ export default function StoryPage() {
                 </div>
               </motion.div>
             ) : (
-              <div className="relative w-full max-w-xl xl:max-w-2xl aspect-square rounded-[32px] border border-white/15 bg-black/30 flex items-center justify-center shadow-[0_25px_60px_rgba(0,0,0,0.35)]">
+              <motion.div
+                key={`no-image-${safeImageIndex}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+                className="relative w-full max-w-xl xl:max-w-2xl aspect-square rounded-[32px] border border-white/15 bg-black/30 flex items-center justify-center shadow-[0_25px_60px_rgba(0,0,0,0.35)]"
+              >
                 <div className="text-center space-y-4">
                   <motion.div
+                    className="w-12 h-12 border-4 border-red-600/30 border-t-red-600 rounded-full mx-auto"
                     animate={{ rotate: 360 }}
-                    transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                    className="w-16 h-16 border-4 border-red-600/30 border-t-red-600 rounded-full mx-auto"
+                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                   />
-                  <p className="text-white/50 text-sm">Generating image...</p>
+                  <p className="text-white/50 text-lg font-medium">Image Generating...</p>
+                  <p className="text-white/30 text-sm">Episode {Math.floor(safeImageIndex / 3) + 1}</p>
                 </div>
-              </div>
+              </motion.div>
             )}
           </div>
         </div>
