@@ -122,9 +122,12 @@ export default function StoryPage() {
     setIsGeneratingImages(true);
 
     let generatedCount = 0;
+    // Keep track of updated story data as we generate images
+    let currentStoryData = { ...data };
+    currentStoryData.story = [...data.story];
 
-    for (let i = 0; i < data.story.length; i += 3) {
-      const paragraph = data.story[i];
+    for (let i = 0; i < currentStoryData.story.length; i += 3) {
+      const paragraph = currentStoryData.story[i];
 
       if (!paragraph.imagePrompt || paragraph.imagePrompt === null || paragraph.imageUrl) {
         continue;
@@ -157,20 +160,32 @@ export default function StoryPage() {
           });
 
           if (response.data?.imageUrl) {
-            const updatedStory = { ...data };
-            updatedStory.story[i] = { ...updatedStory.story[i], imageUrl: response.data.imageUrl };
-            setStoryData(updatedStory);
+            // Update local copy of story data
+            currentStoryData.story[i] = { ...currentStoryData.story[i], imageUrl: response.data.imageUrl };
+            
+            // Update state
+            setStoryData({ ...currentStoryData });
+            
+            // Update sessionStorage
+            sessionStorage.setItem('storyData', JSON.stringify(currentStoryData));
             
             // Update in Supabase if story ID exists
             const storyId = sessionStorage.getItem('storyId');
             if (storyId && user) {
               try {
-                await supabase
+                const { error } = await supabase
                   .from('stories')
                   .update({
-                    story_data: updatedStory,
+                    story_data: currentStoryData,
                   })
-                  .eq('id', storyId);
+                  .eq('id', storyId)
+                  .eq('user_id', user.id);
+                
+                if (error) {
+                  console.error('Error updating story in database:', error);
+                } else {
+                  console.log(`✅ Story updated in database for paragraph ${i}`);
+                }
               } catch (err: any) {
                 console.error('Error updating story in database:', err);
               }
@@ -191,50 +206,130 @@ export default function StoryPage() {
 
     console.log(`✅ Image generation complete! Generated ${generatedCount} images`);
     setIsGeneratingImages(false);
-  }, []);
+  }, [user, supabase]);
 
   useEffect(() => {
     if (imageGenerationStarted.current) return;
 
-    const storedStoryData = sessionStorage.getItem('storyData');
-    const storedUniverse = sessionStorage.getItem('universe');
+    const loadStory = async () => {
+      const storyId = sessionStorage.getItem('storyId');
+      const storedStoryData = sessionStorage.getItem('storyData');
+      const storedUniverse = sessionStorage.getItem('universe');
 
-    if (!storedStoryData || !storedUniverse) {
-      router.push('/');
-      return;
-    }
+      // If we have storyId and user, try to load from database first
+      if (storyId && user) {
+        try {
+          console.log('🔍 Loading story from database with ID:', storyId);
+          const { data, error: fetchError } = await supabase
+            .from('stories')
+            .select('*')
+            .eq('id', storyId)
+            .eq('user_id', user.id)
+            .single();
 
-    try {
-      const data = JSON.parse(storedStoryData);
-      console.log('📚 Loaded story data:', {
-        hasTitle: !!data.title,
-        title: data.title,
-        hasLearningOutcomes: !!data.learningOutcomes,
-        learningOutcomes: data.learningOutcomes,
-        totalParagraphs: data.story?.length || 0,
-        paragraphsWithImages: data.story?.filter((p: any, idx: number) => idx % 3 === 0 && p.imagePrompt).length || 0
-      });
-      setStoryData(data);
-      setUniverse(storedUniverse);
-      setIsLoading(false);
+          if (!fetchError && data) {
+            const dbStoryData = data.story_data as StoryData;
+            const dbUniverse = data.universe;
+            
+            console.log('✅ Story loaded from database');
+            console.log('📊 Image status:', dbStoryData.story
+              .filter((p: any, idx: number) => idx % 3 === 0)
+              .map((p: any, idx: number) => ({
+                index: idx * 3,
+                hasImageUrl: !!p.imageUrl && p.imageUrl !== '' && p.imageUrl !== null && p.imageUrl !== undefined
+              }))
+            );
 
-      const needsImageGeneration = data.story.some((p: any, idx: number) =>
-        idx % 3 === 0 && p.imagePrompt && p.imagePrompt !== null && !p.imageUrl
-      );
+            // Update sessionStorage with database data
+            sessionStorage.setItem('storyData', JSON.stringify(dbStoryData));
+            sessionStorage.setItem('universe', dbUniverse);
 
-      if (needsImageGeneration) {
-        console.log('🎨 Some images missing, starting image generation');
-        imageGenerationStarted.current = true;
-        generateImages(data, storedUniverse);
-      } else {
-        console.log('✅ All images already generated, skipping');
+            setStoryData(dbStoryData);
+            setUniverse(dbUniverse);
+            setIsLoading(false);
+            
+            // Check if images need generation - but DON'T generate if page was refreshed/closed
+            // Only generate if this is the first time loading (no images in database)
+            const hasAnyImages = dbStoryData.story.some((p: any, idx: number) => 
+              idx % 3 === 0 && p.imageUrl && p.imageUrl !== '' && p.imageUrl !== null && p.imageUrl !== undefined
+            );
+            
+            if (!hasAnyImages) {
+              // No images at all - this is a fresh story, generate images
+              const needsImageGeneration = dbStoryData.story.some((p: any, idx: number) =>
+                idx % 3 === 0 && p.imagePrompt && p.imagePrompt !== null && !p.imageUrl
+              );
+
+              if (needsImageGeneration && !imageGenerationStarted.current) {
+                console.log('🎨 No images in database, starting image generation');
+                imageGenerationStarted.current = true;
+                generateImages(dbStoryData, dbUniverse);
+              } else {
+                console.log('✅ Story loaded from database - no image generation needed');
+              }
+            } else {
+              console.log('✅ Story loaded from database with existing images - no regeneration');
+            }
+            return;
+          } else {
+            console.log('⚠️ Story not found in database, falling back to sessionStorage');
+          }
+        } catch (err) {
+          console.error('Error loading from database:', err);
+          // Fall through to sessionStorage loading
+        }
       }
-    } catch (err) {
-      console.error('Failed to load story data:', err);
-      setError('Failed to load story. Please try again.');
-      setIsLoading(false);
-    }
-  }, [router, generateImages]);
+
+      // Fallback to sessionStorage if no database story found
+      if (!storedStoryData || !storedUniverse) {
+        router.push('/');
+        return;
+      }
+
+      try {
+        const data = JSON.parse(storedStoryData);
+        console.log('📚 Loaded story data from sessionStorage:', {
+          hasTitle: !!data.title,
+          title: data.title,
+          hasLearningOutcomes: !!data.learningOutcomes,
+          learningOutcomes: data.learningOutcomes,
+          totalParagraphs: data.story?.length || 0,
+          paragraphsWithImages: data.story?.filter((p: any, idx: number) => idx % 3 === 0 && p.imagePrompt).length || 0
+        });
+        setStoryData(data);
+        setUniverse(storedUniverse);
+        setIsLoading(false);
+
+        // Only generate images if this is a fresh story (no images at all)
+        // If page was refreshed/closed, don't regenerate missing images
+        const hasAnyImages = data.story.some((p: any, idx: number) => 
+          idx % 3 === 0 && p.imageUrl && p.imageUrl !== '' && p.imageUrl !== null && p.imageUrl !== undefined
+        );
+
+        if (!hasAnyImages) {
+          const needsImageGeneration = data.story.some((p: any, idx: number) =>
+            idx % 3 === 0 && p.imagePrompt && p.imagePrompt !== null && !p.imageUrl
+          );
+
+          if (needsImageGeneration && !imageGenerationStarted.current) {
+            console.log('🎨 Some images missing, starting image generation');
+            imageGenerationStarted.current = true;
+            generateImages(data, storedUniverse);
+          } else {
+            console.log('✅ All images already generated, skipping');
+          }
+        } else {
+          console.log('✅ Story has some images - missing ones will show as "No Image"');
+        }
+      } catch (err) {
+        console.error('Failed to load story data:', err);
+        setError('Failed to load story. Please try again.');
+        setIsLoading(false);
+      }
+    };
+
+    loadStory();
+  }, [router, generateImages, user, supabase]);
 
   // Update active image based on scroll position (throttled for better performance)
   useEffect(() => {
