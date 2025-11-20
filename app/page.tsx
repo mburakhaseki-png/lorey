@@ -795,11 +795,11 @@ export default function HomePage() {
             {[
               {
                 quote: 'Lorey turned my pharmacology notes into a gritty medical drama. I stopped zoning out.',
-                author: 'Leyla · Med Student',
+                author: 'Sarah · Med Student',
               },
               {
                 quote: 'I watch a “lesson” before sleep the way I used to watch trailers. Grades went up.',
-                author: 'Arda · High School Senior',
+                author: 'Jake · High School Senior',
               },
             ].map((item, index) => (
               <motion.div
