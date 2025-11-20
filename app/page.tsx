@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useDropzone } from 'react-dropzone';
 import axios from 'axios';
+import Image from 'next/image';
 import { validateLessonText, countWords } from '@/utils/parseLesson';
 import { FullPageLoader } from '@/components/Loader';
 import Header from '@/components/Header';
@@ -431,6 +432,179 @@ export default function HomePage() {
               </motion.button>
             </motion.div>
           </div>
+        </div>
+      </section>
+
+      {/* Marketing Section - Transform Section */}
+      <section className="relative py-24 px-4 sm:px-6 overflow-x-hidden bg-gradient-to-b from-black/50 via-black/60 to-black/50 border-t border-white/10">
+        {/* Animated Background Gradients */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <motion.div
+            animate={{
+              x: [0, 100, 0],
+              y: [0, 50, 0],
+            }}
+            transition={{
+              duration: 20,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+            className="absolute top-0 left-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-gradient-to-br from-red-600/30 via-pink-600/20 to-purple-600/20 rounded-full blur-[120px]"
+          />
+          <motion.div
+            animate={{
+              x: [0, -80, 0],
+              y: [0, -40, 0],
+            }}
+            transition={{
+              duration: 25,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 0.5
+            }}
+            className="absolute bottom-0 right-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-gradient-to-br from-blue-600/20 via-cyan-600/20 to-teal-600/20 rounded-full blur-[120px]"
+          />
+          <motion.div
+            animate={{
+              scale: [1, 1.2, 1],
+              opacity: [0.3, 0.5, 0.3],
+            }}
+            transition={{
+              duration: 15,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] sm:w-[500px] sm:h-[500px] bg-gradient-to-r from-red-500/10 via-purple-500/10 to-blue-500/10 rounded-full blur-[140px]"
+          />
+        </div>
+
+        <div className="max-w-7xl w-full mx-auto relative z-10">
+          <motion.div
+            {...getAnimationProps({ viewport: { once: true } })}
+            className="text-center space-y-6 mb-16"
+          >
+            <motion.div
+              initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="inline-block"
+            >
+              <span className="px-4 py-2 bg-gradient-to-r from-red-600/20 to-pink-600/20 border border-red-500/30 rounded-full text-sm text-red-400 font-semibold uppercase tracking-wider">
+                ✨ Magic Happens Here
+              </span>
+            </motion.div>
+            <motion.h2
+              initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold break-words px-2"
+            >
+              <span className="text-white">Transform your </span>
+              <span className="text-gradient-red glow-red">boring</span>
+              <span className="text-white"> lesson notes into a </span>
+              <span className="bg-gradient-to-r from-red-500 via-pink-500 to-purple-500 bg-clip-text text-transparent">story</span>
+              <span className="text-white"> from your favorite </span>
+              <span className="bg-gradient-to-r from-blue-500 via-cyan-500 to-teal-500 bg-clip-text text-transparent">universe</span>
+            </motion.h2>
+          </motion.div>
+
+          <motion.div
+            {...getAnimationProps({ 
+              viewport: { once: true },
+              transition: { delay: isMobile ? 0 : 0.2 }
+            })}
+            className="flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-12"
+          >
+            {/* Left Image - Vertical (9:16) */}
+            <motion.div
+              initial={isMobile ? { opacity: 1, scale: 1 } : { opacity: 0, x: -50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: isMobile ? 0 : 0.3 }}
+              whileHover={isMobile ? {} : { scale: 1.05, y: -10 }}
+              className="relative flex-shrink-0 w-full sm:w-[180px] md:w-[200px] lg:w-[220px]"
+            >
+              <div className="relative rounded-3xl overflow-hidden border-2 border-gradient-to-br from-red-500/30 via-pink-500/20 to-purple-500/20 shadow-2xl bg-gradient-to-br from-black/40 to-black/60 backdrop-blur-sm" style={{ aspectRatio: '9/16' }}>
+                <div className="absolute inset-0 bg-gradient-to-br from-red-600/10 via-transparent to-purple-600/10 pointer-events-none z-10" />
+                <div className="absolute inset-0 border border-white/10 rounded-3xl pointer-events-none z-10" />
+                <Image
+                  src="https://i.ibb.co/Kxm5KS6Y/note.png"
+                  alt="Lesson notes"
+                  fill
+                  className="object-contain transition-transform duration-300"
+                  quality={95}
+                  sizes="(max-width: 640px) 180px, (max-width: 768px) 200px, 220px"
+                  unoptimized={false}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none z-10" />
+              </div>
+              {/* Glow effect */}
+              <div className="absolute inset-0 rounded-3xl bg-red-600/20 blur-2xl -z-10 opacity-50" />
+            </motion.div>
+
+            {/* Animated Arrow - Center */}
+            <motion.div
+              initial={isMobile ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.5 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: isMobile ? 0 : 0.5 }}
+              className="flex-shrink-0 relative"
+            >
+              <motion.div
+                animate={isMobile ? {} : {
+                  x: [0, 10, 0],
+                  scale: [1, 1.1, 1],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  delay: 0.8
+                }}
+                className="relative"
+              >
+                <div className="absolute inset-0 bg-red-600/30 blur-xl rounded-full" />
+                <svg
+                  className="relative w-12 h-12 lg:w-20 lg:h-20 text-red-600 rotate-90 lg:rotate-0 drop-shadow-lg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </motion.div>
+            </motion.div>
+
+            {/* Right Image - Horizontal (16:9) */}
+            <motion.div
+              initial={isMobile ? { opacity: 1, scale: 1 } : { opacity: 0, x: 50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: isMobile ? 0 : 0.4 }}
+              whileHover={isMobile ? {} : { scale: 1.05, y: -10 }}
+              className="relative flex-shrink-0 w-full sm:w-[320px] md:w-[380px] lg:w-[440px]"
+            >
+              <div className="relative rounded-3xl overflow-hidden border-2 border-gradient-to-br from-blue-500/30 via-cyan-500/20 to-teal-500/20 shadow-2xl bg-gradient-to-br from-black/40 to-black/60 backdrop-blur-sm" style={{ aspectRatio: '16/9' }}>
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 via-transparent to-teal-600/10 pointer-events-none z-10" />
+                <div className="absolute inset-0 border border-white/10 rounded-3xl pointer-events-none z-10" />
+                <Image
+                  src="https://i.ibb.co/rGr96TKb/Ekran-g-r-nt-s-2025-11-20-175542.png"
+                  alt="Story transformation"
+                  fill
+                  className="object-contain transition-transform duration-300"
+                  quality={95}
+                  sizes="(max-width: 640px) 320px, (max-width: 768px) 380px, 440px"
+                  unoptimized={false}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none z-10" />
+              </div>
+              {/* Glow effect */}
+              <div className="absolute inset-0 rounded-3xl bg-blue-600/20 blur-2xl -z-10 opacity-50" />
+            </motion.div>
+          </motion.div>
         </div>
       </section>
 
