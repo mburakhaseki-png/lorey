@@ -172,6 +172,30 @@ export default function HomePage() {
     setIsLoading(true);
     setError('');
 
+    // Increment story usage IMMEDIATELY when button is clicked (before story generation)
+    let usageIncremented = false;
+    if (user) {
+      try {
+        const incrementResponse = await fetch('/api/subscription/increment-usage', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        const incrementResult = await incrementResponse.json();
+        if (incrementResult.success) {
+          usageIncremented = true;
+        } else {
+          setError(incrementResult.error || 'Failed to reserve story slot');
+          setIsLoading(false);
+          return;
+        }
+      } catch (err) {
+        console.error('Failed to increment story usage:', err);
+        setError('Failed to reserve story slot. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+    }
+
     try {
       let lessonText = extractedText;
 
@@ -198,6 +222,17 @@ export default function HomePage() {
         }
 
         if (!lessonText) {
+          // Decrement usage if extraction failed
+          if (usageIncremented && user) {
+            try {
+              await fetch('/api/subscription/decrement-usage', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+              });
+            } catch (decrementErr) {
+              console.error('Failed to decrement usage after extraction error:', decrementErr);
+            }
+          }
           throw new Error('Failed to extract text from source');
         }
         setExtractedText(lessonText);
@@ -208,6 +243,17 @@ export default function HomePage() {
       const MAX_WORDS = 15000;
       
       if (wordCount > MAX_WORDS) {
+        // Decrement usage if word count exceeds limit
+        if (usageIncremented && user) {
+          try {
+            await fetch('/api/subscription/decrement-usage', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+            });
+          } catch (decrementErr) {
+            console.error('Failed to decrement usage after word count error:', decrementErr);
+          }
+        }
         setError(`Dosya çok uzun. Maksimum 15.000 kelime kabul edilir. Dosyanızda ${wordCount.toLocaleString('tr-TR')} kelime var.`);
         setIsLoading(false);
         return;
@@ -215,6 +261,17 @@ export default function HomePage() {
 
       const validation = validateLessonText(lessonText);
       if (!validation.isValid) {
+        // Decrement usage if validation failed
+        if (usageIncremented && user) {
+          try {
+            await fetch('/api/subscription/decrement-usage', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+            });
+          } catch (decrementErr) {
+            console.error('Failed to decrement usage after validation error:', decrementErr);
+          }
+        }
         setError(validation.error || 'Invalid lesson content');
         setIsLoading(false);
         return;
@@ -242,18 +299,7 @@ export default function HomePage() {
       const storyData: StoryData = response.data;
       const storyUniverse = universe || 'Custom Universe';
 
-      // Increment story usage count
-      if (user) {
-        try {
-          await fetch('/api/subscription/increment-usage', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-          });
-        } catch (err) {
-          console.error('Failed to increment story usage:', err);
-          // Continue anyway - story was generated successfully
-        }
-      }
+      // Usage was already incremented at the start, no need to increment again
 
       // Save to sessionStorage for immediate viewing
       sessionStorage.setItem('storyData', JSON.stringify(storyData));
@@ -288,6 +334,17 @@ export default function HomePage() {
 
       router.push('/story');
     } catch (err: any) {
+      // Decrement usage if story generation failed
+      if (usageIncremented && user) {
+        try {
+          await fetch('/api/subscription/decrement-usage', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+          });
+        } catch (decrementErr) {
+          console.error('Failed to decrement usage after story generation error:', decrementErr);
+        }
+      }
       setError(err.response?.data?.error || 'Failed to generate story');
       setIsLoading(false);
     }
