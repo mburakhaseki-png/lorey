@@ -32,14 +32,23 @@ export default function StoryDetailPage() {
 
   // Helper function to get image URL for a paragraph index
   const getImageUrl = useCallback((paragraphIndex: number) => {
-    if (!storyData) return null;
+    if (!storyData || !storyData.story || !Array.isArray(storyData.story)) return null;
     // Images are at indices 0, 3, 6, 9, ...
     // For paragraph index, find the corresponding image index
     const imageIndex = Math.floor(paragraphIndex / 3) * 3;
     if (imageIndex < storyData.story.length && imageIndex % 3 === 0) {
-      const imageUrl = storyData.story[imageIndex]?.imageUrl;
-      // Return null if imageUrl is empty, null, or undefined
-      return imageUrl && imageUrl !== '' ? imageUrl : null;
+      const paragraph = storyData.story[imageIndex];
+      if (!paragraph) return null;
+      
+      const imageUrl = paragraph.imageUrl;
+      
+      // Strict validation: imageUrl must be a non-empty string
+      if (!imageUrl) return null;
+      if (typeof imageUrl !== 'string') return null;
+      if (imageUrl.trim() === '') return null;
+      if (imageUrl === 'null' || imageUrl === 'undefined') return null;
+      
+      return imageUrl;
     }
     return null;
   }, [storyData]);
@@ -211,6 +220,12 @@ export default function StoryDetailPage() {
 
         const loadedStoryData = data.story_data as StoryData;
         
+        // Ensure story array exists and is properly formatted
+        if (!loadedStoryData || !loadedStoryData.story || !Array.isArray(loadedStoryData.story)) {
+          console.error('❌ Invalid story data structure:', loadedStoryData);
+          throw new Error('Invalid story data format');
+        }
+        
         // Debug: Log image status with more detail
         const imageStatus = loadedStoryData.story
           .map((p: any, idx: number) => ({
@@ -224,6 +239,8 @@ export default function StoryDetailPage() {
           }))
           .filter((item: any) => item.index % 3 === 0);
         console.log('📊 Image status from database:', imageStatus);
+        console.log('📊 First image URL sample:', loadedStoryData.story[0]?.imageUrl);
+        console.log('📊 Story array length:', loadedStoryData.story.length);
         
         // More strict check: only generate if imageUrl is truly missing
         const needsImageGeneration = loadedStoryData.story.some(
@@ -340,10 +357,12 @@ export default function StoryDetailPage() {
     );
   }
 
-  // Get current active image URL - ensure index is valid
+  // Get current active image URL - ensure index is valid and use getImageUrl to find the correct image
   const safeImageIndex = activeImageIndex < storyData.story.length ? activeImageIndex : 0;
-  const currentImageUrl = storyData.story[safeImageIndex]?.imageUrl || null;
-  const currentImagePrompt = storyData.story[safeImageIndex]?.imagePrompt || null;
+  // Find the image index (0, 3, 6, 9, ...) for the current paragraph
+  const imageIndex = Math.floor(safeImageIndex / 3) * 3;
+  const currentImageUrl = getImageUrl(safeImageIndex);
+  const currentImagePrompt = storyData.story[imageIndex]?.imagePrompt || null;
 
   return (
     <>
@@ -356,7 +375,7 @@ export default function StoryDetailPage() {
           <div className="h-full flex items-center justify-center p-6 xl:p-8">
             {currentImageUrl ? (
               <motion.div
-                key={safeImageIndex}
+                key={imageIndex}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5 }}
@@ -371,12 +390,16 @@ export default function StoryDetailPage() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10 pointer-events-none" />
                     <img
                       src={currentImageUrl}
-                      alt={currentImagePrompt || `Scene ${safeImageIndex + 1}`}
+                      alt={currentImagePrompt || `Scene ${imageIndex + 1}`}
                       className="w-full h-full object-contain"
+                      onError={(e) => {
+                        console.error('Image load error:', currentImageUrl);
+                        e.currentTarget.style.display = 'none';
+                      }}
                     />
                     <div className="absolute top-4 left-4 z-20">
                       <span className="episode-badge text-xs">
-                        EPISODE {Math.floor(safeImageIndex / 3) + 1}
+                        EPISODE {Math.floor(imageIndex / 3) + 1}
                       </span>
                     </div>
                   </div>
