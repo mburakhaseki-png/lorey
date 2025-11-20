@@ -333,7 +333,27 @@ CRITICAL RULES FOR IMAGE PROMPTS:
   * Star Wars: "Realistic sci-fi cinematic style"
 - Make scenes FUN, DYNAMIC, and directly related to the story moment
 - Include environment details, lighting, mood, and action
-- Always end with: "high quality, detailed, [art style of universe]"`;
+- Always end with: "high quality, detailed, [art style of universe]"
+
+CHARACTER SELECTION RULES (CRITICAL):
+- ONLY include characters that are ESSENTIAL to the scene and belong to the chosen universe
+- DO NOT add irrelevant, unnecessary, or random characters/people to the scene
+- DO NOT include characters that don't exist in the chosen universe unless absolutely necessary for the educational content
+- If a character is not directly involved in the story moment, DO NOT include them in the image
+- Examples:
+  * ❌ WRONG: "Rick, Morty, and 5 random background characters watching a historical event"
+  * ✅ CORRECT: "Rick Sanchez [full description] explaining the historical event to Morty Smith [full description]"
+- Keep the scene focused on ONLY the characters needed to tell that specific story moment
+
+HISTORICAL/REAL PERSON CHARACTER RULES (CRITICAL):
+- If the lesson content is about a real historical person or figure, and that person appears in the image, you MUST include their accurate physical characteristics
+- Research and include known physical features: hair color, eye color, facial features, typical clothing, distinctive characteristics
+- Examples:
+  * If lesson is about Atatürk and he appears: "Mustafa Kemal Atatürk, man with blonde/sandy hair, blue eyes, distinctive mustache, wearing military uniform or period-appropriate clothing"
+  * If lesson is about Einstein and he appears: "Albert Einstein, elderly man with wild white hair, mustache, wearing simple clothing"
+  * If lesson is about a historical figure: Include their historically accurate appearance
+- If physical characteristics are unknown or not relevant, focus on their role and actions in the scene
+- ALWAYS prioritize accuracy when depicting real historical figures`;
 
     const userPrompt = `You are creating an episode of ${universe} that teaches this content:
 

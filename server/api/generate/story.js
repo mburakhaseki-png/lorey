@@ -488,6 +488,7 @@ CHARACTER CONSISTENCY RULES (CRITICAL):
   * ❌ WRONG: "Rick and Rick and Morty" or "2 Mortys" or "multiple Ricks"
   * ✅ CORRECT: "Rick Sanchez [full description] and Morty Smith [full description]" - each character appears once
 - Keep character descriptions IDENTICAL across all images for consistency (same hair color, same clothing, same features)
+- If the lesson content is about a real historical person or figure, and that person appears in the image, you MUST include their accurate physical characteristics (hair color, eye color, facial features, typical clothing, distinctive characteristics)
 
 SCENE SIMPLICITY RULES (CRITICAL):
 - CREATE SIMPLE, FOCUSED SCENES with 1-3 main characters maximum
@@ -498,6 +499,26 @@ SCENE SIMPLICITY RULES (CRITICAL):
   * ✅ CORRECT: "Rick Sanchez [full description] showing a glowing formula to Morty Smith [full description] in a simple laboratory with one green portal in background"
 - Keep backgrounds SIMPLE and relevant to the scene
 - Prioritize CLARITY over complexity
+
+CHARACTER SELECTION RULES (CRITICAL):
+- ONLY include characters that are ESSENTIAL to the scene and belong to the chosen universe
+- DO NOT add irrelevant, unnecessary, or random characters/people to the scene
+- DO NOT include characters that don't exist in the chosen universe unless absolutely necessary for the educational content
+- If a character is not directly involved in the story moment, DO NOT include them in the image
+- Examples:
+  * ❌ WRONG: "Rick, Morty, and 5 random background characters watching a historical event"
+  * ✅ CORRECT: "Rick Sanchez [full description] explaining the historical event to Morty Smith [full description]"
+- Keep the scene focused on ONLY the characters needed to tell that specific story moment
+
+HISTORICAL/REAL PERSON CHARACTER RULES (CRITICAL):
+- If the lesson content is about a real historical person or figure, and that person appears in the image, you MUST include their accurate physical characteristics
+- Research and include known physical features: hair color, eye color, facial features, typical clothing, distinctive characteristics
+- Examples:
+  * If lesson is about Atatürk and he appears: "Mustafa Kemal Atatürk, man with blonde/sandy hair, blue eyes, distinctive mustache, wearing military uniform or period-appropriate clothing"
+  * If lesson is about Einstein and he appears: "Albert Einstein, elderly man with wild white hair, mustache, wearing simple clothing"
+  * If lesson is about a historical figure: Include their historically accurate appearance
+- If physical characteristics are unknown or not relevant, focus on their role and actions in the scene
+- ALWAYS prioritize accuracy when depicting real historical figures
 
 ART STYLE SPECIFICATION:
 - ALWAYS specify the art style matching the universe:
